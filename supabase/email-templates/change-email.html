@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bekræft ny e-mail</title>
+</head>
+<body style="margin:0;padding:0;background-color:#faf3ea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf3ea;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1f1a15;padding:32px 40px;border-radius:16px 16px 0 0;text-align:center;">
+              <h1 style="margin:0;font-size:36px;font-weight:800;color:#f1cda9;letter-spacing:6px;font-family:Georgia,'Times New Roman',serif;">
+                Maní
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#fffdf9;padding:40px;border-left:1px solid #f1e6d6;border-right:1px solid #f1e6d6;">
+              <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1f1a15;">
+                Bekræft din nye e-mail
+              </h2>
+              <p style="margin:0 0 24px;font-size:15px;color:#6b4c2f;line-height:1.6;">
+                Du har anmodet om at ændre din e-mailadresse. Klik på knappen nedenfor for at bekræfte ændringen.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 32px;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;background-color:#c8272a;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 40px;border-radius:12px;letter-spacing:0.3px;">
+                      Bekræft e-mail
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 16px;font-size:13px;color:#a68b6b;line-height:1.5;">
+                Hvis du ikke har anmodet om denne ændring, bedes du kontakte os med det samme.
+              </p>
+              <p style="margin:0;font-size:12px;color:#a68b6b;word-break:break-all;background-color:#faf3ea;padding:12px 16px;border-radius:8px;border:1px solid #f1e6d6;">
+                {{ .ConfirmationURL }}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#1f1a15;padding:24px 40px;border-radius:0 0 16px 16px;text-align:center;">
+              <p style="margin:0 0 4px;font-size:13px;color:#a68b6b;">
+                Maní Reformer Pilates
+              </p>
+              <p style="margin:0;font-size:11px;color:#6b4c2f;">
+                Linket udløber om 1 time.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
