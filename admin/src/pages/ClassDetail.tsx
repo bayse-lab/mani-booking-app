@@ -4,27 +4,23 @@ import { supabase } from '../lib/supabase';
 import { useAdminAuth } from '../App';
 
 interface Attendee {
-  id: string;
+  booking_id: string;
   user_id: string;
   status: string;
   checked_in_at: string | null;
   booked_at: string;
-  profiles: {
-    full_name: string | null;
-    email: string;
-    phone: string | null;
-  };
+  full_name: string | null;
+  email: string;
+  phone: string | null;
 }
 
 interface WaitlistPerson {
-  id: string;
+  waitlist_id: string;
   user_id: string;
   position: number;
   status: string;
-  profiles: {
-    full_name: string | null;
-    email: string;
-  };
+  full_name: string | null;
+  email: string;
 }
 
 interface ClassInfo {
@@ -55,28 +51,22 @@ export default function ClassDetailPage() {
   async function fetchData() {
     setLoading(true);
 
-    const [classRes, bookingsRes, waitlistRes] = await Promise.all([
+    const [classRes, attendeesRes, waitlistRes] = await Promise.all([
       supabase
         .from('class_instances')
         .select('*, class_definitions(name), centers(name)')
         .eq('id', id!)
         .single(),
-      supabase
-        .from('bookings')
-        .select('*, profiles(full_name, email, phone)')
-        .eq('class_instance_id', id!)
-        .eq('status', 'confirmed')
-        .order('booked_at'),
-      supabase
-        .from('waitlist_entries')
-        .select('*, profiles(full_name, email)')
-        .eq('class_instance_id', id!)
-        .eq('status', 'waiting')
-        .order('position'),
+      supabase.rpc('fn_get_class_attendees', {
+        p_class_instance_id: id!,
+      }),
+      supabase.rpc('fn_get_class_waitlist', {
+        p_class_instance_id: id!,
+      }),
     ]);
 
     setClassInfo(classRes.data as ClassInfo);
-    setAttendees((bookingsRes.data ?? []) as Attendee[]);
+    setAttendees((attendeesRes.data ?? []) as Attendee[]);
     setWaitlist((waitlistRes.data ?? []) as WaitlistPerson[]);
     setLoading(false);
   }
@@ -211,21 +201,21 @@ export default function ClassDetailPage() {
             </thead>
             <tbody className="divide-y divide-sand/50">
               {attendees.map((att) => (
-                <tr key={att.id} className="hover:bg-sand/10">
+                <tr key={att.booking_id} className="hover:bg-sand/10">
                   <td className="px-6 py-4 text-sm font-medium text-brand">
-                    {att.profiles.full_name || 'Unknown'}
+                    {att.full_name || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 text-sm text-mani-brown">
-                    {att.profiles.email}
+                    {att.email}
                   </td>
                   <td className="px-6 py-4 text-sm text-mani-brown">
-                    {att.profiles.phone || '-'}
+                    {att.phone || '-'}
                   </td>
                   {canCheckIn && (
                     <td className="px-6 py-4">
                       <button
                         onClick={() =>
-                          handleCheckIn(att.id, !!att.checked_in_at)
+                          handleCheckIn(att.booking_id, !!att.checked_in_at)
                         }
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                           att.checked_in_at
@@ -240,7 +230,7 @@ export default function ClassDetailPage() {
                   {canCheckIn && (
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => handleNoShow(att.id)}
+                        onClick={() => handleNoShow(att.booking_id)}
                         className="text-xs text-mani-tierRed hover:underline"
                       >
                         No-show
@@ -278,15 +268,15 @@ export default function ClassDetailPage() {
             </thead>
             <tbody className="divide-y divide-sand/50">
               {waitlist.map((w) => (
-                <tr key={w.id}>
+                <tr key={w.waitlist_id}>
                   <td className="px-6 py-4 text-sm font-bold text-accent">
                     #{w.position}
                   </td>
                   <td className="px-6 py-4 text-sm text-brand">
-                    {w.profiles.full_name || 'Unknown'}
+                    {w.full_name || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 text-sm text-mani-brown">
-                    {w.profiles.email}
+                    {w.email}
                   </td>
                 </tr>
               ))}
