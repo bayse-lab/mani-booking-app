@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MANI Booking App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@200;300;400&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --obsidian: #1F1A15;
+      --parchment: #F0CDA9;
+      --sand: #F5E8D5;
+      --sand-mid: #E8D4B8;
+      --gold: #C4A97D;
+      --warm-grey: #8A7D70;
+      --taupe: #B8A898;
+    }
+
+    body {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-weight: 300;
+      background: var(--sand);
+      color: var(--obsidian);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 640px;
+      width: 100%;
+      padding: 80px 24px 60px;
+      text-align: center;
+    }
+
+    .brand {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 400;
+      font-size: 56px;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      font-weight: 200;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--warm-grey);
+      margin-bottom: 60px;
+    }
+
+    .divider {
+      width: 48px;
+      height: 1px;
+      background: var(--gold);
+      margin: 0 auto 48px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--taupe);
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--parchment);
+      border: 1px solid var(--sand-mid);
+      border-radius: 2px;
+      padding: 32px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .card h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 400;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--warm-grey);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      background: var(--obsidian);
+      color: var(--gold);
+      text-decoration: none;
+      font-family: 'Jost', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 2px;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--sand-mid);
+      color: var(--obsidian);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold);
+      opacity: 1;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .cards-group {
+      margin-bottom: 48px;
+    }
+
+    .footer {
+      margin-top: auto;
+      padding: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--taupe);
+      letter-spacing: 1px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+
+    .badge-admin { background: var(--obsidian); color: var(--gold); }
+    .badge-mobile { background: var(--gold); color: var(--obsidian); }
+
+    .instructions {
+      font-size: 13px;
+      color: var(--warm-grey);
+      line-height: 1.8;
+      text-align: left;
+      margin-top: 16px;
+    }
+
+    .instructions code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      background: var(--sand);
+      padding: 2px 6px;
+      border-radius: 2px;
+    }
+
+    .instructions ol {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="brand">Mani</h1>
+    <p class="subtitle">Reformer Pilates Studio</p>
+    <div class="divider"></div>
+
+    <!-- Admin Panel -->
+    <div class="cards-group">
+      <p class="section-label">Admin Panel</p>
+      <div class="card">
+        <span class="badge badge-admin">Admin</span>
+        <h3>Studio Management</h3>
+        <p>Manage classes, schedules, users, centers, and view the dashboard. Log in with your admin account.</p>
+        <a href="./admin/" class="btn">Open Admin Panel</a>
+      </div>
+    </div>
+
+    <!-- Mobile App -->
+    <div class="cards-group">
+      <p class="section-label">Mobile App</p>
+      <div class="card">
+        <span class="badge badge-mobile">Android</span>
+        <h3>Download APK</h3>
+        <p>Install the app directly on your Android device. Enable "Install from unknown sources" if prompted.</p>
+        <div class="btn-row">
+          <a href="#" class="btn btn-outline" id="apk-link">Coming Soon</a>
+        </div>
+        <div class="instructions">
+          <ol>
+            <li>Tap the download link on your Android phone</li>
+            <li>Open the downloaded APK file</li>
+            <li>Allow installation from unknown sources if prompted</li>
+            <li>Open the app and sign in</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="badge badge-mobile">iOS</span>
+        <h3>TestFlight</h3>
+        <p>Join the beta via Apple TestFlight. You'll need to install the TestFlight app first.</p>
+        <div class="btn-row">
+          <a href="#" class="btn btn-outline" id="ios-link">Coming Soon</a>
+        </div>
+        <div class="instructions">
+          <ol>
+            <li>Install <a href="https://apps.apple.com/app/testflight/id899247664" style="color: var(--gold);">TestFlight</a> from the App Store</li>
+            <li>Tap the invite link above</li>
+            <li>Accept the invitation and install the app</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Developer Setup -->
+    <div class="cards-group">
+      <p class="section-label">Developer Setup</p>
+      <div class="card">
+        <h3>Run Locally</h3>
+        <p>Clone the repo and run both the mobile app and admin panel on your machine.</p>
+        <div class="instructions">
+          <ol>
+            <li><code>git clone https://github.com/bayse-lab/mani-booking-app.git</code></li>
+            <li><code>cd mani-booking-app</code></li>
+            <li><code>cp .env.example .env</code> &mdash; fill in Supabase keys</li>
+            <li><code>npm install && npx expo start</code> &mdash; mobile app</li>
+            <li><code>cd admin && npm install && npm run dev</code> &mdash; admin panel</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    MANI &middot; Proof of Concept
+  </footer>
+</body>
+</html>

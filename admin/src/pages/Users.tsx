@@ -175,21 +175,25 @@ export default function UsersPage() {
     if (!editUser) return;
     setEditSaving(true);
 
-    // Update profile
-    await supabase
-      .from('profiles')
-      .update({
-        full_name: editForm.full_name || null,
-        phone: editForm.phone || null,
-        role: editForm.role,
-        address_line1: editForm.address_line1 || null,
-        address_line2: editForm.address_line2 || null,
-        city: editForm.city || null,
-        postal_code: editForm.postal_code || null,
-        birthday: editForm.birthday || null,
-        center_id: editForm.center_id || null,
-      })
-      .eq('id', editUser.id);
+    // Update profile via admin RPC (bypasses RLS)
+    const { error } = await supabase.rpc('admin_update_profile', {
+      target_user_id: editUser.id,
+      new_full_name: editForm.full_name || null,
+      new_phone: editForm.phone || null,
+      new_role: editForm.role,
+      new_address_line1: editForm.address_line1 || null,
+      new_address_line2: editForm.address_line2 || null,
+      new_city: editForm.city || null,
+      new_postal_code: editForm.postal_code || null,
+      new_birthday: editForm.birthday || null,
+      new_center_id: editForm.role !== 'instructor' ? (editForm.center_id || null) : null,
+    });
+    if (error) {
+      console.error('Failed to update profile:', error);
+      alert('Failed to save: ' + error.message);
+      setEditSaving(false);
+      return;
+    }
 
     // If instructor, sync instructor_centers
     if (editForm.role === 'instructor') {
@@ -420,7 +424,7 @@ export default function UsersPage() {
                           ? 'bg-blue-100 text-blue-700'
                           : 'bg-sand text-mani-brown'
                     }`}>
-                      {user.role}
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-mani-brown">

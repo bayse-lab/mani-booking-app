@@ -9,9 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bayselab.mani"
     },
     "android": {
+      "package": "com.bayselab.mani",
       "adaptiveIcon": {
         "backgroundColor": "#F5E8D5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

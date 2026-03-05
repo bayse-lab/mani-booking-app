@@ -25,6 +25,32 @@ interface InstructorProfile {
   email: string;
 }
 
+interface CenterForm {
+  name: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  phone: string;
+  email: string;
+  reformer_count: string;
+}
+
+function emptyForm(): CenterForm {
+  return { name: '', address: '', city: '', postal_code: '', phone: '', email: '', reformer_count: '0' };
+}
+
+function centerToForm(c: Center): CenterForm {
+  return {
+    name: c.name,
+    address: c.address || '',
+    city: c.city || '',
+    postal_code: c.postal_code || '',
+    phone: c.phone || '',
+    email: c.email || '',
+    reformer_count: String(c.reformer_count),
+  };
+}
+
 function Field({
   label,
   value,
@@ -32,6 +58,7 @@ function Field({
   type = 'text',
   required = false,
   placeholder,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -39,18 +66,33 @@ function Field({
   type?: string;
   required?: boolean;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-mani-brown mb-1">{label}</label>
+      <label className="block text-xs font-medium text-mani-warmGrey uppercase tracking-wide mb-1">
+        {label}
+      </label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-sand-light"
+        className="w-full px-3 py-2 border border-sand rounded text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-sand-light disabled:opacity-50 disabled:cursor-not-allowed"
         required={required}
         placeholder={placeholder}
+        disabled={disabled}
       />
+    </div>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-mani-warmGrey uppercase tracking-wide mb-0.5">
+        {label}
+      </dt>
+      <dd className="text-sm text-brand">{value || '—'}</dd>
     </div>
   );
 }
@@ -60,19 +102,15 @@ export default function CentersPage() {
   const [stats, setStats] = useState<Record<string, CenterStats>>({});
   const [loading, setLoading] = useState(true);
 
-  // Add/Edit modal
-  const [editCenter, setEditCenter] = useState<Center | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    address: '',
-    city: '',
-    postal_code: '',
-    phone: '',
-    email: '',
-    reformer_count: '0',
-  });
+  // Editing state — which center is in edit mode
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<CenterForm>(emptyForm());
   const [saving, setSaving] = useState(false);
+
+  // Adding new center
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState<CenterForm>(emptyForm());
+  const [addSaving, setAddSaving] = useState(false);
 
   // Instructor management modal
   const [instructorCenter, setInstructorCenter] = useState<Center | null>(null);
@@ -93,7 +131,6 @@ export default function CentersPage() {
     setCenters(centersData);
     setLoading(false);
 
-    // Fetch stats for each center
     const statsMap: Record<string, CenterStats> = {};
     for (const center of centersData) {
       const [membersResult, instructorsResult] = await Promise.all([
@@ -120,39 +157,20 @@ export default function CentersPage() {
     setStats(statsMap);
   }
 
-  // --- Add/Edit ---
-  function openAddModal() {
-    setEditCenter(null);
-    setForm({
-      name: '',
-      address: '',
-      city: '',
-      postal_code: '',
-      phone: '',
-      email: '',
-      reformer_count: '0',
-    });
-    setShowAddModal(true);
+  // --- Inline Edit ---
+  function startEditing(center: Center) {
+    setEditingId(center.id);
+    setForm(centerToForm(center));
   }
 
-  function openEditModal(center: Center) {
-    setEditCenter(center);
-    setForm({
-      name: center.name,
-      address: center.address || '',
-      city: center.city || '',
-      postal_code: center.postal_code || '',
-      phone: center.phone || '',
-      email: center.email || '',
-      reformer_count: String(center.reformer_count),
-    });
-    setShowAddModal(true);
+  function cancelEditing() {
+    setEditingId(null);
+    setForm(emptyForm());
   }
 
-  async function saveCenter() {
+  async function saveEditing(centerId: string) {
     if (!form.name.trim()) return;
     setSaving(true);
-
     const payload = {
       name: form.name.trim(),
       address: form.address.trim() || null,
@@ -162,16 +180,33 @@ export default function CentersPage() {
       email: form.email.trim() || null,
       reformer_count: parseInt(form.reformer_count) || 0,
     };
-
-    if (editCenter) {
-      await supabase.from('centers').update(payload).eq('id', editCenter.id);
-    } else {
-      await supabase.from('centers').insert(payload);
-    }
-
+    await supabase.from('centers').update(payload).eq('id', centerId);
     setSaving(false);
-    setShowAddModal(false);
-    setEditCenter(null);
+    setEditingId(null);
+    fetchCenters();
+  }
+
+  // --- Add New ---
+  function openAddForm() {
+    setAddForm(emptyForm());
+    setShowAddForm(true);
+  }
+
+  async function saveNewCenter() {
+    if (!addForm.name.trim()) return;
+    setAddSaving(true);
+    const payload = {
+      name: addForm.name.trim(),
+      address: addForm.address.trim() || null,
+      city: addForm.city.trim() || null,
+      postal_code: addForm.postal_code.trim() || null,
+      phone: addForm.phone.trim() || null,
+      email: addForm.email.trim() || null,
+      reformer_count: parseInt(addForm.reformer_count) || 0,
+    };
+    await supabase.from('centers').insert(payload);
+    setAddSaving(false);
+    setShowAddForm(false);
     fetchCenters();
   }
 
@@ -251,200 +286,276 @@ export default function CentersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-brand">Centers ({centers.length})</h1>
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-accent text-brand text-sm font-medium rounded-lg hover:bg-accent-dark transition-colors"
-        >
-          + Add Center
-        </button>
+        {!showAddForm && (
+          <button
+            onClick={openAddForm}
+            className="px-4 py-2 bg-accent text-brand text-sm font-medium rounded hover:bg-accent-dark transition-colors"
+          >
+            + Add Center
+          </button>
+        )}
       </div>
 
-      {/* Centers Table */}
-      <div className="bg-mani-cream rounded-xl border border-sand overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-sand-light border-b border-sand">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Name</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">City</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Reformers</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Members</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Instructors</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Status</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-sand/60">
-            {centers.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-mani-taupe text-sm">
-                  No centers yet
-                </td>
-              </tr>
-            ) : (
-              centers.map((center) => {
-                const s = stats[center.id];
-                return (
-                  <tr key={center.id} className="hover:bg-sand-light/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-brand">{center.name}</td>
-                    <td className="px-6 py-4 text-sm text-mani-brown">{center.city || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-mani-brown">{center.reformer_count}</td>
-                    <td className="px-6 py-4 text-sm text-mani-brown">{s?.membersCount ?? '...'}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-mani-brown">
-                          {s ? s.instructors.length : '...'}
-                        </span>
-                        <button
-                          onClick={() => openInstructorModal(center)}
-                          className="text-xs text-accent hover:text-accent-dark font-medium"
-                        >
-                          Manage
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded font-medium ${
-                          center.is_active
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {center.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => openEditModal(center)}
-                          className="text-sm text-accent hover:text-accent-dark font-medium transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <span className="text-sand-dark">|</span>
-                        <button
-                          onClick={() => toggleActive(center)}
-                          className={`text-sm font-medium transition-colors hover:underline ${
-                            center.is_active ? 'text-mani-tierRed' : 'text-green-600'
-                          }`}
-                        >
-                          {center.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ======= Add/Edit Center Modal ======= */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-mani-cream rounded-2xl w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-auto border border-sand">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-brand">
-                {editCenter ? 'Edit Center' : 'Add Center'}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditCenter(null);
-                }}
-                className="text-mani-taupe hover:text-brand text-xl leading-none"
-              >
-                &times;
-              </button>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveCenter();
-              }}
-              className="space-y-3"
-            >
+      {/* ======= Add New Center Form ======= */}
+      {showAddForm && (
+        <div className="bg-mani-cream rounded border border-sand p-6 mb-6">
+          <h2 className="text-lg font-semibold text-brand mb-4">New Center</h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveNewCenter();
+            }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
               <Field
                 label="Name"
-                value={form.name}
-                onChange={(v) => setForm({ ...form, name: v })}
+                value={addForm.name}
+                onChange={(v) => setAddForm({ ...addForm, name: v })}
                 required
                 placeholder="Center name"
               />
               <Field
                 label="Address"
-                value={form.address}
-                onChange={(v) => setForm({ ...form, address: v })}
+                value={addForm.address}
+                onChange={(v) => setAddForm({ ...addForm, address: v })}
                 placeholder="Street address"
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="City"
-                  value={form.city}
-                  onChange={(v) => setForm({ ...form, city: v })}
-                  placeholder="City"
-                />
-                <Field
-                  label="Postal Code"
-                  value={form.postal_code}
-                  onChange={(v) => setForm({ ...form, postal_code: v })}
-                  placeholder="0000"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="Phone"
-                  value={form.phone}
-                  onChange={(v) => setForm({ ...form, phone: v })}
-                  type="tel"
-                  placeholder="+45 ..."
-                />
-                <Field
-                  label="Email"
-                  value={form.email}
-                  onChange={(v) => setForm({ ...form, email: v })}
-                  type="email"
-                  placeholder="center@example.com"
-                />
-              </div>
+              <Field
+                label="City"
+                value={addForm.city}
+                onChange={(v) => setAddForm({ ...addForm, city: v })}
+                placeholder="City"
+              />
+              <Field
+                label="Postal Code"
+                value={addForm.postal_code}
+                onChange={(v) => setAddForm({ ...addForm, postal_code: v })}
+                placeholder="0000"
+              />
+              <Field
+                label="Phone"
+                value={addForm.phone}
+                onChange={(v) => setAddForm({ ...addForm, phone: v })}
+                type="tel"
+                placeholder="+45 ..."
+              />
+              <Field
+                label="Email"
+                value={addForm.email}
+                onChange={(v) => setAddForm({ ...addForm, email: v })}
+                type="email"
+                placeholder="center@example.com"
+              />
               <Field
                 label="Reformer Count"
-                value={form.reformer_count}
-                onChange={(v) => setForm({ ...form, reformer_count: v })}
+                value={addForm.reformer_count}
+                onChange={(v) => setAddForm({ ...addForm, reformer_count: v })}
                 type="number"
                 placeholder="0"
               />
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditCenter(null);
-                  }}
-                  className="px-4 py-2 text-sm text-mani-brown hover:text-brand transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 bg-accent text-brand text-sm font-medium rounded-lg hover:bg-accent-dark disabled:opacity-50 transition-colors"
-                >
-                  {saving ? 'Saving...' : editCenter ? 'Save Changes' : 'Create Center'}
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 text-sm text-mani-brown hover:text-brand transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={addSaving}
+                className="px-5 py-2 bg-accent text-brand text-sm font-medium rounded hover:bg-accent-dark disabled:opacity-50 transition-colors"
+              >
+                {addSaving ? 'Creating...' : 'Create Center'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
+
+      {/* ======= Center Cards ======= */}
+      <div className="space-y-4">
+        {centers.length === 0 && !showAddForm ? (
+          <div className="bg-mani-cream rounded border border-sand px-6 py-12 text-center">
+            <p className="text-mani-taupe text-sm">No centers yet</p>
+          </div>
+        ) : (
+          centers.map((center) => {
+            const s = stats[center.id];
+            const isEditing = editingId === center.id;
+
+            return (
+              <div
+                key={center.id}
+                className="bg-mani-cream rounded border border-sand overflow-hidden"
+              >
+                {/* Card header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-sand bg-sand-light/50">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-brand">
+                      {isEditing ? form.name || 'Untitled' : center.name}
+                    </h2>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        center.is_active
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {center.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isEditing ? (
+                      <>
+                        <button
+                          onClick={() => startEditing(center)}
+                          className="px-3 py-1.5 text-sm text-accent hover:text-accent-dark font-medium transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => toggleActive(center)}
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                            center.is_active
+                              ? 'text-mani-tierRed hover:underline'
+                              : 'text-green-600 hover:underline'
+                          }`}
+                        >
+                          {center.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={cancelEditing}
+                          className="px-3 py-1.5 text-sm text-mani-brown hover:text-brand transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => saveEditing(center.id)}
+                          disabled={saving}
+                          className="px-4 py-1.5 bg-accent text-brand text-sm font-medium rounded hover:bg-accent-dark disabled:opacity-50 transition-colors"
+                        >
+                          {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card body */}
+                <div className="px-6 py-5">
+                  {isEditing ? (
+                    /* --- Edit Mode --- */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Field
+                        label="Name"
+                        value={form.name}
+                        onChange={(v) => setForm({ ...form, name: v })}
+                        required
+                        placeholder="Center name"
+                      />
+                      <Field
+                        label="Address"
+                        value={form.address}
+                        onChange={(v) => setForm({ ...form, address: v })}
+                        placeholder="Street address"
+                      />
+                      <Field
+                        label="City"
+                        value={form.city}
+                        onChange={(v) => setForm({ ...form, city: v })}
+                        placeholder="City"
+                      />
+                      <Field
+                        label="Postal Code"
+                        value={form.postal_code}
+                        onChange={(v) => setForm({ ...form, postal_code: v })}
+                        placeholder="0000"
+                      />
+                      <Field
+                        label="Phone"
+                        value={form.phone}
+                        onChange={(v) => setForm({ ...form, phone: v })}
+                        type="tel"
+                        placeholder="+45 ..."
+                      />
+                      <Field
+                        label="Email"
+                        value={form.email}
+                        onChange={(v) => setForm({ ...form, email: v })}
+                        type="email"
+                        placeholder="center@example.com"
+                      />
+                      <Field
+                        label="Reformer Count"
+                        value={form.reformer_count}
+                        onChange={(v) => setForm({ ...form, reformer_count: v })}
+                        type="number"
+                        placeholder="0"
+                      />
+                    </div>
+                  ) : (
+                    /* --- Read Mode --- */
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4">
+                      <ReadOnlyField label="Address" value={center.address || ''} />
+                      <ReadOnlyField label="City" value={center.city || ''} />
+                      <ReadOnlyField label="Postal Code" value={center.postal_code || ''} />
+                      <ReadOnlyField label="Phone" value={center.phone || ''} />
+                      <ReadOnlyField label="Email" value={center.email || ''} />
+                      <ReadOnlyField label="Reformer Count" value={String(center.reformer_count)} />
+                      <ReadOnlyField
+                        label="Members"
+                        value={s ? String(s.membersCount) : '...'}
+                      />
+                      <div>
+                        <dt className="text-xs font-medium text-mani-warmGrey uppercase tracking-wide mb-0.5">
+                          Instructors
+                        </dt>
+                        <dd className="flex items-center gap-2">
+                          <span className="text-sm text-brand">
+                            {s ? s.instructors.length : '...'}
+                          </span>
+                          <button
+                            onClick={() => openInstructorModal(center)}
+                            className="text-xs text-accent hover:text-accent-dark font-medium"
+                          >
+                            Manage
+                          </button>
+                        </dd>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Instructor names preview (read mode only) */}
+                {!isEditing && s && s.instructors.length > 0 && (
+                  <div className="px-6 pb-4">
+                    <div className="flex flex-wrap gap-1.5">
+                      {s.instructors.map((inst) => (
+                        <span
+                          key={inst.id}
+                          className="text-xs px-2 py-0.5 rounded bg-sand-light border border-sand text-mani-brown"
+                        >
+                          {inst.full_name || inst.email}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
 
       {/* ======= Manage Instructors Modal ======= */}
       {instructorCenter && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-mani-cream rounded-2xl w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-auto border border-sand">
+          <div className="bg-mani-cream rounded w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-auto border border-sand">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-lg font-semibold text-brand">Manage Instructors</h2>
@@ -474,7 +585,7 @@ export default function CentersPage() {
                       {centerInstructors.map((inst) => (
                         <div
                           key={inst.id}
-                          className="flex items-center justify-between py-2.5 px-3 bg-sand-light rounded-lg border border-sand"
+                          className="flex items-center justify-between py-2.5 px-3 bg-sand-light rounded border border-sand"
                         >
                           <div>
                             <p className="text-sm font-medium text-brand">
@@ -504,7 +615,7 @@ export default function CentersPage() {
                       {availableInstructors.map((inst) => (
                         <div
                           key={inst.id}
-                          className="flex items-center justify-between py-2.5 px-3 bg-sand-light rounded-lg border border-sand"
+                          className="flex items-center justify-between py-2.5 px-3 bg-sand-light rounded border border-sand"
                         >
                           <div>
                             <p className="text-sm font-medium text-brand">
