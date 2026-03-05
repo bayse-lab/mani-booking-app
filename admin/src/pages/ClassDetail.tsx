@@ -82,13 +82,22 @@ export default function ClassDetailPage() {
   }
 
   async function handleCheckIn(bookingId: string, isCheckedIn: boolean) {
-    await supabase
-      .from('bookings')
-      .update({
-        checked_in_at: isCheckedIn ? null : new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId);
+    const { data, error } = await supabase.rpc('fn_check_in_booking', {
+      p_booking_id: bookingId,
+      p_undo: isCheckedIn,
+    });
+
+    if (error) {
+      console.error('Check-in failed:', error.message);
+      alert('Check-in failed: ' + error.message);
+      return;
+    }
+
+    const result = data as { success: boolean; error?: string };
+    if (!result.success) {
+      alert(result.error || 'Check-in failed');
+      return;
+    }
 
     fetchData();
   }
@@ -96,13 +105,21 @@ export default function ClassDetailPage() {
   async function handleNoShow(bookingId: string) {
     if (!confirm('Mark this person as a no-show?')) return;
 
-    await supabase
-      .from('bookings')
-      .update({
-        status: 'no_show',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', bookingId);
+    const { data, error } = await supabase.rpc('fn_mark_no_show', {
+      p_booking_id: bookingId,
+    });
+
+    if (error) {
+      console.error('No-show failed:', error.message);
+      alert('No-show failed: ' + error.message);
+      return;
+    }
+
+    const result = data as { success: boolean; error?: string };
+    if (!result.success) {
+      alert(result.error || 'Failed to mark no-show');
+      return;
+    }
 
     fetchData();
   }
