@@ -51,9 +51,22 @@
       ],
       "expo-font"
     ],
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e4c00dd5-6906-48bf-a56b-9bad7144f248"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e4c00dd5-6906-48bf-a56b-9bad7144f248"
+      }
+    },
+    "owner": "bayse"
   }
 }
