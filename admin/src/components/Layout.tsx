@@ -16,7 +16,7 @@ const INSTRUCTOR_NAV_ITEMS = [
 ];
 
 export default function Layout() {
-  const { signOut, isAdmin, isInstructor } = useAdminAuth();
+  const { signOut, isAdmin } = useAdminAuth();
   const { centers, selectedCenter, setSelectedCenter } = useCenterContext();
 
   const navItems = isAdmin ? ADMIN_NAV_ITEMS : INSTRUCTOR_NAV_ITEMS;

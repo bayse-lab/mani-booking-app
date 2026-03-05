@@ -117,8 +117,6 @@ export default function DashboardPage() {
 
     const rows = data as unknown as CSVRow[];
 
-    const fromLabel = fromDate.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' });
-    const toLabel = toDate.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' });
     const centerName = selectedCenter
       ? centers.find((c) => c.id === selectedCenter)?.name ?? 'Ukendt'
       : 'Alle centre';
