@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   FlatList,
+  Linking,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,6 +118,24 @@ export default function SignUpScreen() {
               color={Colors.textTertiary}
             />
           </TouchableOpacity>
+
+          <Text style={styles.termsText}>
+            By creating an account, you agree to our{' '}
+            <Text
+              style={styles.termsLink}
+              onPress={() => Linking.openURL('https://bayse-lab.github.io/mani-booking-app/legal.html#terms')}
+            >
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text
+              style={styles.termsLink}
+              onPress={() => Linking.openURL('https://bayse-lab.github.io/mani-booking-app/legal.html#privacy')}
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -332,5 +351,19 @@ const styles = StyleSheet.create({
   pickerItemTextActive: {
     fontWeight: '700',
     color: Colors.accent,
+  },
+  termsText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontFamily: 'Jost-Light',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 20,
+  },
+  termsLink: {
+    color: Colors.accent,
+    fontFamily: 'Jost',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
