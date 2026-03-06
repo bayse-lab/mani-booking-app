@@ -25,6 +25,7 @@ export interface Database {
           postal_code: string | null;
           avatar_url: string | null;
           membership_type_id: string | null;
+          deactivation_requested_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -43,6 +44,7 @@ export interface Database {
           postal_code?: string | null;
           avatar_url?: string | null;
           membership_type_id?: string | null;
+          deactivation_requested_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -61,6 +63,7 @@ export interface Database {
           postal_code?: string | null;
           avatar_url?: string | null;
           membership_type_id?: string | null;
+          deactivation_requested_at?: string | null;
           updated_at?: string;
         };
         Relationships: [

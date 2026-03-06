@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maní — Legal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F5E8D5;
+      color: #1F1A15;
+      line-height: 1.7;
+    }
+    .header {
+      background: #1F1A15;
+      padding: 24px 0;
+      text-align: center;
+    }
+    .header h1 {
+      color: #F5E8D5;
+      font-size: 28px;
+      letter-spacing: 6px;
+      font-weight: 300;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px 16px 0;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .tab {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: 1px solid #E8D4B8;
+      background: transparent;
+      font-size: 14px;
+      cursor: pointer;
+      color: #8A7D70;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: #1F1A15;
+      color: #F5E8D5;
+      border-color: #1F1A15;
+    }
+    .content {
+      max-width: 720px;
+      margin: 24px auto;
+      padding: 32px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #E8D4B8;
+      min-height: 300px;
+    }
+    .content h1 { font-size: 24px; margin-bottom: 16px; }
+    .content h2 { font-size: 18px; margin-top: 24px; margin-bottom: 8px; color: #1F1A15; }
+    .content h3 { font-size: 16px; margin-top: 20px; margin-bottom: 6px; }
+    .content p { margin-bottom: 12px; color: #3a3530; font-size: 15px; }
+    .content ul, .content ol { margin-bottom: 12px; padding-left: 24px; }
+    .content li { margin-bottom: 6px; color: #3a3530; font-size: 15px; }
+    .content strong { font-weight: 600; }
+    .content em { font-style: italic; color: #8A7D70; }
+    .content code { background: #F0CDA9; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .loading { text-align: center; padding: 60px; color: #8A7D70; }
+    .footer { text-align: center; padding: 24px; color: #B8A898; font-size: 12px; }
+    @media (max-width: 600px) {
+      .content { margin: 16px; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Maní</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-privacy" onclick="showTab('privacy')">Privacy Policy</button>
+    <button class="tab" id="tab-terms" onclick="showTab('terms')">Terms of Service</button>
+  </div>
+
+  <div class="content" id="content">
+    <div class="loading">Loading...</div>
+  </div>
+
+  <div class="footer">
+    &copy; 2026 Maní
+  </div>
+
+  <script>
+    // Minimal Markdown to HTML converter
+    function mdToHtml(md) {
+      if (!md) return '<p>No content available.</p>';
+      return md
+        // Headers
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        // Bold and italic
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Code
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        // Unordered list items
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        // Wrap consecutive <li> in <ul>
+        .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
+        // Paragraphs (lines that aren't already wrapped)
+        .replace(/^(?!<[hulo])(.*\S.*)$/gm, '<p>$1</p>')
+        // Clean up extra newlines
+        .replace(/\n{2,}/g, '\n');
+    }
+
+    const SUPABASE_URL = 'https://qylxegkrxzeiohowisuu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_2ZC9liLFLjSJWsYrigY-wA_d6NqXOVJ';
+
+    let legalData = { privacy_policy: '', terms_of_service: '' };
+    let currentTab = 'privacy';
+
+    // Check URL hash for direct linking
+    if (window.location.hash === '#terms') currentTab = 'terms';
+
+    async function fetchLegal() {
+      try {
+        const resp = await fetch(
+          `${SUPABASE_URL}/rest/v1/app_settings?key=in.(privacy_policy,terms_of_service)&select=key,value`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        );
+        const data = await resp.json();
+        for (const row of data) {
+          legalData[row.key] = row.value;
+        }
+      } catch (err) {
+        console.error('Failed to fetch legal texts:', err);
+      }
+      showTab(currentTab);
+    }
+
+    function showTab(tab) {
+      currentTab = tab;
+      const content = document.getElementById('content');
+      const tabPrivacy = document.getElementById('tab-privacy');
+      const tabTerms = document.getElementById('tab-terms');
+
+      tabPrivacy.className = tab === 'privacy' ? 'tab active' : 'tab';
+      tabTerms.className = tab === 'terms' ? 'tab active' : 'tab';
+
+      const text = tab === 'privacy' ? legalData.privacy_policy : legalData.terms_of_service;
+      content.innerHTML = mdToHtml(text);
+
+      // Update URL hash without scrolling
+      history.replaceState(null, '', tab === 'terms' ? '#terms' : '#privacy');
+    }
+
+    fetchLegal();
+  </script>
+</body>
+</html>

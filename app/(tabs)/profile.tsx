@@ -13,6 +13,7 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -113,6 +114,59 @@ export default function ProfileScreen() {
         onPress: signOut,
       },
     ]);
+  };
+
+  const handleRequestDeletion = () => {
+    Alert.alert(
+      'Slet konto',
+      'Dit abonnement løber til udgangen af næste måned. Du har stadig adgang til appen indtil da, hvorefter din konto og data slettes permanent.',
+      [
+        { text: 'Annuller', style: 'cancel' },
+        {
+          text: 'Anmod om sletning',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user) return;
+            const { error } = await supabase
+              .from('profiles')
+              .update({ deactivation_requested_at: new Date().toISOString() })
+              .eq('id', user.id);
+            if (error) {
+              Alert.alert('Fejl', 'Kunne ikke anmode om sletning. Prøv igen.');
+              return;
+            }
+            await refreshProfile();
+            Alert.alert('Anmodning modtaget', 'Din konto vil blive slettet ved udgangen af næste måned.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCancelDeletion = () => {
+    Alert.alert(
+      'Annuller sletning',
+      'Vil du annullere din anmodning om kontosletning?',
+      [
+        { text: 'Nej', style: 'cancel' },
+        {
+          text: 'Ja, annuller sletning',
+          onPress: async () => {
+            if (!user) return;
+            const { error } = await supabase
+              .from('profiles')
+              .update({ deactivation_requested_at: null })
+              .eq('id', user.id);
+            if (error) {
+              Alert.alert('Fejl', 'Kunne ikke annullere. Prøv igen.');
+              return;
+            }
+            await refreshProfile();
+            Alert.alert('Annulleret', 'Din konto vil ikke blive slettet.');
+          },
+        },
+      ]
+    );
   };
 
   const handleChangeEmail = async () => {
@@ -371,11 +425,49 @@ export default function ProfileScreen() {
         </View>
       )}
 
+      {/* Legal Links */}
+      <View style={styles.legalContainer}>
+        <TouchableOpacity
+          style={styles.legalLink}
+          onPress={() => Linking.openURL('https://bayse-lab.github.io/mani-booking-app/legal.html#privacy')}
+        >
+          <Ionicons name="shield-checkmark-outline" size={18} color={Colors.textSecondary} />
+          <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          <Ionicons name="open-outline" size={14} color={Colors.textTertiary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.legalLink}
+          onPress={() => Linking.openURL('https://bayse-lab.github.io/mani-booking-app/legal.html#terms')}
+        >
+          <Ionicons name="document-text-outline" size={18} color={Colors.textSecondary} />
+          <Text style={styles.legalLinkText}>Terms of Service</Text>
+          <Ionicons name="open-outline" size={14} color={Colors.textTertiary} />
+        </TouchableOpacity>
+      </View>
+
       {/* Sign Out */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Ionicons name="log-out-outline" size={20} color={Colors.error} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
+
+      {/* Delete Account */}
+      {profile.deactivation_requested_at ? (
+        <View style={styles.deactivationNotice}>
+          <Ionicons name="time-outline" size={20} color={Colors.warmGrey} />
+          <Text style={styles.deactivationText}>
+            Kontosletning anmodet. Din konto slettes ved udgangen af næste måned.
+          </Text>
+          <TouchableOpacity onPress={handleCancelDeletion}>
+            <Text style={styles.cancelDeletionText}>Annuller sletning</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.deleteButton} onPress={handleRequestDeletion}>
+          <Ionicons name="trash-outline" size={18} color={Colors.textTertiary} />
+          <Text style={styles.deleteButtonText}>Slet konto</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Email change modal */}
       <Modal
@@ -681,5 +773,68 @@ const styles = StyleSheet.create({
     fontFamily: 'Jost',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  legalContainer: {
+    marginTop: 32,
+    marginHorizontal: 24,
+    gap: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  legalLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 16,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  legalLinkText: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.text,
+    fontFamily: 'Jost-Light',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 24,
+    marginHorizontal: 24,
+    marginBottom: 40,
+    padding: 14,
+  },
+  deleteButtonText: {
+    fontSize: 13,
+    color: Colors.textTertiary,
+    fontFamily: 'Jost-Light',
+  },
+  deactivationNotice: {
+    marginTop: 24,
+    marginHorizontal: 24,
+    marginBottom: 40,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    gap: 8,
+  },
+  deactivationText: {
+    fontSize: 13,
+    color: Colors.warmGrey,
+    fontFamily: 'Jost-Light',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  cancelDeletionText: {
+    fontSize: 14,
+    color: Colors.accent,
+    fontFamily: 'Jost',
+    fontWeight: '600',
+    marginTop: 4,
   },
 });

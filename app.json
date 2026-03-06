@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.bayselab.mani",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Maní uses your photo library to set your profile picture."
       }
     },
     "android": {

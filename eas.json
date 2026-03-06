@@ -3,6 +3,13 @@
     "version": ">= 18.0.0",
     "appVersionSource": "remote"
   },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6744706638"
+      }
+    }
+  },
   "build": {
     "preview": {
       "distribution": "internal",

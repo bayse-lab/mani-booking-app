@@ -44,6 +44,7 @@ jobs:
         run: |
           mkdir -p _site/admin
           cp landing/index.html _site/
+          cp landing/legal.html _site/
           cp -r admin/dist/* _site/admin/
 
       - uses: actions/upload-pages-artifact@v3
