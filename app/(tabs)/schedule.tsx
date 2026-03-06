@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { View, FlatList, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useState, useMemo, useCallback } from 'react';
+import { View, FlatList, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { DaySelector } from '@/components/schedule/day-selector';
 import { ClassCard } from '@/components/schedule/class-card';
 import { FilterBar } from '@/components/schedule/filter-bar';
@@ -39,7 +39,7 @@ export default function ScheduleScreen() {
     [selectedCenter, selectedInstructor, selectedCategory]
   );
 
-  const { classes, loading, error } = useClasses(selectedDate, filters);
+  const { classes, loading, error, refetch } = useClasses(selectedDate, filters);
 
   // Derive filter options from loaded classes (unfiltered by instructor/category so options stay stable)
   const { instructorOptions, categoryOptions } = useMemo(() => {
@@ -109,6 +109,14 @@ export default function ScheduleScreen() {
           renderItem={({ item }) => <ClassCard classInstance={item} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={refetch}
+              tintColor={Colors.accent}
+              colors={[Colors.accent]}
+            />
+          }
         />
       )}
     </View>

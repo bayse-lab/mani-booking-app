@@ -56,5 +56,27 @@ export function useClasses(selectedDate: Date, filters?: ClassFilters) {
     fetchClasses();
   }, [fetchClasses]);
 
+  // Realtime subscription for class instance changes (new classes, cancellations, etc.)
+  useEffect(() => {
+    const channel = supabase
+      .channel('class_instances_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'class_instances',
+        },
+        () => {
+          fetchClasses();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchClasses]);
+
   return { classes, loading, error, refetch: fetchClasses };
 }

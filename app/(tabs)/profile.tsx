@@ -11,7 +11,9 @@ import {
   Platform,
   Modal,
   FlatList,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-provider';
 import { useCenters } from '@/hooks/use-centers';
@@ -32,6 +34,14 @@ export default function ProfileScreen() {
   const [showCenterPicker, setShowCenterPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Email change
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+
+  // Avatar upload
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const selectedCenter = centers.find((c) => c.id === centerId);
 
@@ -104,6 +114,96 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleChangeEmail = async () => {
+    const trimmed = newEmail.trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    setEmailSaving(true);
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    setEmailSaving(false);
+
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+
+    setShowEmailModal(false);
+    setNewEmail('');
+    Alert.alert(
+      'Confirmation Sent',
+      'A confirmation link has been sent to both your current and new email address. Please confirm both to complete the change.'
+    );
+  };
+
+  const handlePickAvatar = async () => {
+    if (!user) return;
+
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    setUploadingAvatar(true);
+    try {
+      const asset = result.assets[0];
+      const ext = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/avatar.${ext}`;
+
+      // Read file as blob
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+
+      // Convert blob to ArrayBuffer for Supabase upload
+      const arrayBuffer = await new Response(blob).arrayBuffer();
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, {
+          contentType: asset.mimeType || `image/${ext}`,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        Alert.alert('Upload Failed', uploadError.message);
+        setUploadingAvatar(false);
+        return;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Add cache-buster to URL
+      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Save to profile
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      await refreshProfile();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to upload photo.');
+      console.error('Avatar upload error:', err);
+    }
+    setUploadingAvatar(false);
+  };
+
   if (!profile) {
     return (
       <View style={styles.centered}>
@@ -118,13 +218,26 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Avatar placeholder */}
+      {/* Avatar */}
       <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {(profile.full_name || profile.email)[0].toUpperCase()}
-          </Text>
-        </View>
+        <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} activeOpacity={0.7}>
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(profile.full_name || profile.email)[0].toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.avatarEditBadge}>
+            {uploadingAvatar ? (
+              <ActivityIndicator size="small" color={Colors.textOnPrimary} />
+            ) : (
+              <Ionicons name="camera" size={14} color={Colors.textOnPrimary} />
+            )}
+          </View>
+        </TouchableOpacity>
         <Text style={styles.email}>{profile.email}</Text>
       </View>
 
@@ -163,10 +276,13 @@ export default function ProfileScreen() {
         />
 
         <Text style={styles.label}>Email</Text>
-        <View style={styles.readOnlyInput}>
+        <TouchableOpacity
+          style={styles.readOnlyInput}
+          onPress={() => { setNewEmail(''); setShowEmailModal(true); }}
+        >
           <Text style={styles.readOnlyText}>{profile.email}</Text>
-          <Ionicons name="lock-closed-outline" size={16} color={Colors.textTertiary} />
-        </View>
+          <Ionicons name="create-outline" size={16} color={Colors.textTertiary} />
+        </TouchableOpacity>
 
         <Text style={styles.label}>Studio</Text>
         <TouchableOpacity
@@ -254,6 +370,48 @@ export default function ProfileScreen() {
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
+      {/* Email change modal */}
+      <Modal
+        visible={showEmailModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEmailModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowEmailModal(false)}
+        >
+          <View style={styles.pickerModal} onStartShouldSetResponder={() => true}>
+            <Text style={styles.pickerTitle}>Change Email</Text>
+            <View style={{ paddingHorizontal: 20, gap: 12 }}>
+              <Text style={{ fontSize: 13, color: Colors.textSecondary, fontFamily: 'Jost-Light' }}>
+                A confirmation link will be sent to both your current and new email address.
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={newEmail}
+                onChangeText={setNewEmail}
+                placeholder="New email address"
+                placeholderTextColor={Colors.textTertiary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.saveButton, emailSaving && styles.saveButtonDisabled]}
+                onPress={handleChangeEmail}
+                disabled={emailSaving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {emailSaving ? 'Sending...' : 'Send Confirmation'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Center picker modal */}
       <Modal
         visible={showCenterPicker}
@@ -329,6 +487,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: -4,
+    backgroundColor: Colors.accent,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background,
   },
   avatarText: {
     fontSize: 32,

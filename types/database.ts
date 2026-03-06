@@ -23,6 +23,8 @@ export interface Database {
           address_line2: string | null;
           city: string | null;
           postal_code: string | null;
+          avatar_url: string | null;
+          membership_type_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -39,6 +41,8 @@ export interface Database {
           address_line2?: string | null;
           city?: string | null;
           postal_code?: string | null;
+          avatar_url?: string | null;
+          membership_type_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -55,6 +59,8 @@ export interface Database {
           address_line2?: string | null;
           city?: string | null;
           postal_code?: string | null;
+          avatar_url?: string | null;
+          membership_type_id?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -351,6 +357,55 @@ export interface Database {
           },
         ];
       };
+      membership_types: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          monthly_price_dkk: number | null;
+          max_bookings_ahead: number | null;
+          allowed_class_times: string[] | null;
+          required_fields: string[];
+          discount_type: 'percentage' | 'fixed_amount' | 'free_months' | null;
+          discount_value: number | null;
+          discount_label: string | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          monthly_price_dkk?: number | null;
+          max_bookings_ahead?: number | null;
+          allowed_class_times?: string[] | null;
+          required_fields?: string[];
+          discount_type?: 'percentage' | 'fixed_amount' | 'free_months' | null;
+          discount_value?: number | null;
+          discount_label?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          monthly_price_dkk?: number | null;
+          max_bookings_ahead?: number | null;
+          allowed_class_times?: string[] | null;
+          required_fields?: string[];
+          discount_type?: 'percentage' | 'fixed_amount' | 'free_months' | null;
+          discount_value?: number | null;
+          discount_label?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       notifications: {
         Row: {
           id: string;
@@ -418,6 +473,7 @@ export type ClassInstance = Database['public']['Tables']['class_instances']['Row
 export type Booking = Database['public']['Tables']['bookings']['Row'];
 export type WaitlistEntry = Database['public']['Tables']['waitlist_entries']['Row'];
 export type Notification = Database['public']['Tables']['notifications']['Row'];
+export type MembershipType = Database['public']['Tables']['membership_types']['Row'];
 
 // Joined types for queries
 export type ClassInstanceWithDefinition = ClassInstance & {

@@ -8,6 +8,7 @@ const ADMIN_NAV_ITEMS = [
   { to: '/schedule', label: 'Schedule', icon: ScheduleIcon },
   { to: '/users', label: 'Users', icon: UsersIcon },
   { to: '/centers', label: 'Centers', icon: CentersIcon },
+  { to: '/member-types', label: 'Member Types', icon: MemberTypesIcon },
 ];
 
 const INSTRUCTOR_NAV_ITEMS = [
@@ -129,6 +130,14 @@ function CentersIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 21h18" /><path d="M5 21V7l8-4v18" /><path d="M19 21V11l-6-4" /><path d="M9 9h1" /><path d="M9 13h1" /><path d="M9 17h1" />
+    </svg>
+  );
+}
+
+function MemberTypesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
     </svg>
   );
 }

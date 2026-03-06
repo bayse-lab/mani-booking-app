@@ -89,6 +89,8 @@ export default function ClassDetailPage() {
       return;
     }
 
+    // Trigger push delivery
+    await supabase.functions.invoke('push-notify').catch(() => {});
     fetchData();
   }
 
@@ -111,6 +113,30 @@ export default function ClassDetailPage() {
       return;
     }
 
+    // Trigger push delivery
+    await supabase.functions.invoke('push-notify').catch(() => {});
+    fetchData();
+  }
+
+  async function handleRevertNoShow(bookingId: string) {
+    if (!confirm('Revert this no-show back to confirmed?')) return;
+
+    const { data, error } = await supabase.rpc('fn_revert_no_show', {
+      p_booking_id: bookingId,
+    });
+
+    if (error) {
+      console.error('Revert failed:', error.message);
+      alert('Revert failed: ' + error.message);
+      return;
+    }
+
+    const result = data as { success: boolean; error?: string };
+    if (!result.success) {
+      alert(result.error || 'Revert failed');
+      return;
+    }
+
     fetchData();
   }
 
@@ -123,6 +149,7 @@ export default function ClassDetailPage() {
   }
 
   const checkedInCount = attendees.filter((a) => a.checked_in_at).length;
+  const noShowCount = attendees.filter((a) => a.status === 'no_show').length;
 
   // Instructors can only check in for their own classes
   const canCheckIn =
@@ -164,6 +191,9 @@ export default function ClassDetailPage() {
             {classInfo.capacity} booked
           </span>
           <span className="text-accent font-medium">{checkedInCount} checked in</span>
+          {noShowCount > 0 && (
+            <span className="text-mani-tierRed font-medium">{noShowCount} no-show</span>
+          )}
         </div>
       </div>
 
@@ -200,45 +230,64 @@ export default function ClassDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-sand/50">
-              {attendees.map((att) => (
-                <tr key={att.booking_id} className="hover:bg-sand/10">
-                  <td className="px-6 py-4 text-sm font-medium text-brand">
-                    {att.full_name || 'Unknown'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-mani-brown">
-                    {att.email}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-mani-brown">
-                    {att.phone || '-'}
-                  </td>
-                  {canCheckIn && (
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() =>
-                          handleCheckIn(att.booking_id, !!att.checked_in_at)
-                        }
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          att.checked_in_at
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-sand/40 text-mani-brown hover:bg-sand'
-                        }`}
-                      >
-                        {att.checked_in_at ? 'Checked In' : 'Check In'}
-                      </button>
+              {attendees.map((att) => {
+                const isNoShow = att.status === 'no_show';
+                return (
+                  <tr key={att.booking_id} className={`hover:bg-sand/10 ${isNoShow ? 'bg-red-50/40 opacity-75' : ''}`}>
+                    <td className="px-6 py-4 text-sm font-medium text-brand">
+                      {att.full_name || 'Unknown'}
+                      {isNoShow && (
+                        <span className="ml-2 text-xs bg-red-100 text-mani-tierRed px-2 py-0.5 rounded">
+                          No-show
+                        </span>
+                      )}
                     </td>
-                  )}
-                  {canCheckIn && (
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleNoShow(att.booking_id)}
-                        className="text-xs text-mani-tierRed hover:underline"
-                      >
-                        No-show
-                      </button>
+                    <td className="px-6 py-4 text-sm text-mani-brown">
+                      {att.email}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-6 py-4 text-sm text-mani-brown">
+                      {att.phone || '-'}
+                    </td>
+                    {canCheckIn && (
+                      <td className="px-6 py-4">
+                        {!isNoShow && (
+                          <button
+                            onClick={() =>
+                              handleCheckIn(att.booking_id, !!att.checked_in_at)
+                            }
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              att.checked_in_at
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                : 'bg-sand/40 text-mani-brown hover:bg-sand'
+                            }`}
+                          >
+                            {att.checked_in_at ? 'Checked In' : 'Check In'}
+                          </button>
+                        )}
+                      </td>
+                    )}
+                    {canCheckIn && (
+                      <td className="px-6 py-4">
+                        {isNoShow ? (
+                          <button
+                            onClick={() => handleRevertNoShow(att.booking_id)}
+                            className="text-xs text-accent hover:underline font-medium"
+                          >
+                            Revert
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleNoShow(att.booking_id)}
+                            className="text-xs text-mani-tierRed hover:underline"
+                          >
+                            No-show
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

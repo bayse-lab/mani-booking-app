@@ -13,7 +13,13 @@ interface User {
   city: string | null;
   postal_code: string | null;
   center_id: string | null;
+  membership_type_id: string | null;
   created_at: string;
+}
+
+interface MembershipType {
+  id: string;
+  name: string;
 }
 
 interface Center {
@@ -82,6 +88,7 @@ function AgeBadge({ birthday }: { birthday: string | null }) {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [centers, setCenters] = useState<Center[]>([]);
+  const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -90,7 +97,7 @@ export default function UsersPage() {
   const [editForm, setEditForm] = useState({
     full_name: '', phone: '', role: 'member',
     address_line1: '', address_line2: '', city: '', postal_code: '', birthday: '',
-    center_id: '',
+    center_id: '', membership_type_id: '',
   });
   const [editInstructorCenterIds, setEditInstructorCenterIds] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
@@ -114,6 +121,7 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
     fetchCenters();
+    fetchMembershipTypes();
   }, []);
 
   async function fetchUsers() {
@@ -134,6 +142,16 @@ export default function UsersPage() {
     setCenters((data ?? []) as Center[]);
   }
 
+  async function fetchMembershipTypes() {
+    const { data } = await supabase
+      .from('membership_types')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('name');
+    setMembershipTypes((data ?? []) as MembershipType[]);
+  }
+
   // --- Edit ---
   async function openEditModal(user: User) {
     setEditUser(user);
@@ -147,6 +165,7 @@ export default function UsersPage() {
       postal_code: user.postal_code || '',
       birthday: user.birthday || '',
       center_id: user.center_id || '',
+      membership_type_id: user.membership_type_id || '',
     });
 
     // If instructor, fetch their center assignments
@@ -184,6 +203,12 @@ export default function UsersPage() {
       setEditSaving(false);
       return;
     }
+
+    // Update membership type (separate update since admin_update_profile doesn't include it)
+    await supabase
+      .from('profiles')
+      .update({ membership_type_id: editForm.membership_type_id || null })
+      .eq('id', editUser.id);
 
     // If instructor, sync instructor_centers
     if (editForm.role === 'instructor') {
@@ -484,6 +509,21 @@ export default function UsersPage() {
                   onChange={(v) => setEditForm({ ...editForm, center_id: v })}
                 />
               )}
+
+              {/* Membership Type */}
+              <div>
+                <label className="block text-sm font-medium text-mani-brown mb-1">Membership Type</label>
+                <select
+                  value={editForm.membership_type_id}
+                  onChange={(e) => setEditForm({ ...editForm, membership_type_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-sand-light"
+                >
+                  <option value="">No membership type</option>
+                  {membershipTypes.map((mt) => (
+                    <option key={mt.id} value={mt.id}>{mt.name}</option>
+                  ))}
+                </select>
+              </div>
 
               <Field label="Birthday" value={editForm.birthday} onChange={(v) => setEditForm({ ...editForm, birthday: v })} type="date" />
 

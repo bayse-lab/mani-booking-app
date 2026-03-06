@@ -14,14 +14,19 @@ interface TodayClass {
   class_definitions: { name: string };
 }
 
-interface CSVRow {
-  start_time: string;
-  end_time: string;
-  instructor_name: string | null;
-  class_definitions: { name: string };
-  center: { name: string } | null;
-  capacity: number;
-  spots_remaining: number;
+interface CSVBooking {
+  status: string;
+  checked_in_at: string | null;
+  booked_at: string;
+  profiles: { full_name: string | null; email: string } | null;
+  class_instances: {
+    start_time: string;
+    end_time: string;
+    instructor_name: string | null;
+    center_id: string | null;
+    class_definitions: { name: string } | null;
+    centers: { name: string } | null;
+  } | null;
 }
 
 export default function DashboardPage() {
@@ -97,15 +102,25 @@ export default function DashboardPage() {
     const toDate = new Date(csvTo);
     toDate.setHours(23, 59, 59, 999);
 
+    // Query per-booking data for detailed attendance export
     let query = supabase
-      .from('class_instances')
-      .select('start_time, end_time, instructor_name, capacity, spots_remaining, class_definitions(name), center:centers(name)')
-      .gte('start_time', fromDate.toISOString())
-      .lte('start_time', toDate.toISOString())
-      .order('start_time');
+      .from('bookings')
+      .select(`
+        status, checked_in_at, booked_at,
+        profiles(full_name, email),
+        class_instances!inner(
+          start_time, end_time, instructor_name, center_id,
+          class_definitions(name),
+          centers(name)
+        )
+      `)
+      .in('status', ['confirmed', 'completed', 'no_show', 'late_cancelled'])
+      .gte('class_instances.start_time', fromDate.toISOString())
+      .lte('class_instances.start_time', toDate.toISOString())
+      .order('booked_at');
 
     if (selectedCenter) {
-      query = query.eq('center_id', selectedCenter);
+      query = query.eq('class_instances.center_id', selectedCenter);
     }
 
     const { data, error } = await query;
@@ -115,26 +130,32 @@ export default function DashboardPage() {
       return;
     }
 
-    const rows = data as unknown as CSVRow[];
+    const rows = data as unknown as CSVBooking[];
 
     const centerName = selectedCenter
       ? centers.find((c) => c.id === selectedCenter)?.name ?? 'Ukendt'
       : 'Alle centre';
 
-    const csvHeader = 'Dato;Tid;Hold;Instrukt\u00f8r;Center;Varighed (min);Bookinger';
-    const csvRows = rows.map((row) => {
-      const startDate = new Date(row.start_time);
-      const endDate = new Date(row.end_time);
-      const date = startDate.toLocaleDateString('da-DK');
-      const time = `${formatTime(row.start_time)}\u2013${formatTime(row.end_time)}`;
-      const className = row.class_definitions?.name ?? '';
-      const instructor = row.instructor_name ?? '';
-      const center = row.center?.name ?? '';
-      const durationMin = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
-      const bookings = row.capacity - row.spots_remaining;
+    const csvHeader = 'Dato;Tid;Hold;Instrukt\u00f8r;Center;Medlem;Email;Status;Tjekket ind';
+    const csvRows = rows
+      .filter((row) => row.class_instances !== null)
+      .map((row) => {
+        const ci = row.class_instances!;
+        const startDate = new Date(ci.start_time);
+        const date = startDate.toLocaleDateString('da-DK');
+        const time = `${formatTime(ci.start_time)}\u2013${formatTime(ci.end_time)}`;
+        const className = ci.class_definitions?.name ?? '';
+        const instructor = ci.instructor_name ?? '';
+        const center = ci.centers?.name ?? '';
+        const memberName = row.profiles?.full_name ?? '';
+        const email = row.profiles?.email ?? '';
+        const status = row.status === 'no_show' ? 'No-show'
+          : row.status === 'late_cancelled' ? 'Sen afmelding'
+          : row.checked_in_at ? 'Tjekket ind' : 'Bekr\u00e6ftet';
+        const checkedIn = row.checked_in_at ? 'Ja' : 'Nej';
 
-      return [date, time, className, instructor, center, durationMin, bookings].join(';');
-    });
+        return [date, time, className, instructor, center, memberName, email, status, checkedIn].join(';');
+      });
 
     const csvContent = [csvHeader, ...csvRows].join('\n');
     const BOM = '\uFEFF';
@@ -142,7 +163,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `l\u00f8noversigt-${csvFrom}-til-${csvTo}-${centerName.replace(/\s/g, '-')}.csv`;
+    link.download = `oversigt-${csvFrom}-til-${csvTo}-${centerName.replace(/\s/g, '-')}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -211,7 +232,7 @@ export default function DashboardPage() {
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            {exporting ? 'Eksporterer...' : 'Eksport\u00e9r CSV (l\u00f8n)'}
+            {exporting ? 'Eksporterer...' : 'Eksport\u00e9r CSV'}
           </button>
         </div>
       </div>
