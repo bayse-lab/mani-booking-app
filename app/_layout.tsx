@@ -6,6 +6,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/lib/auth-provider';
 import { Colors } from '@/constants/colors';
+import SplashOverlay from '@/components/SplashOverlay';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -123,6 +124,7 @@ export default function RootLayout() {
         </Stack>
       </AuthGuard>
       <StatusBar style="light" />
+      <SplashOverlay />
     </AuthProvider>
   );
 }
