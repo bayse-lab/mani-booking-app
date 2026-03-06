@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useCenterContext } from '../App';
 
 interface User {
   id: string;
@@ -86,6 +87,7 @@ function AgeBadge({ birthday }: { birthday: string | null }) {
 }
 
 export default function UsersPage() {
+  const { selectedCenter } = useCenterContext();
   const [users, setUsers] = useState<User[]>([]);
   const [centers, setCenters] = useState<Center[]>([]);
   const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
@@ -122,13 +124,19 @@ export default function UsersPage() {
     fetchUsers();
     fetchCenters();
     fetchMembershipTypes();
-  }, []);
+  }, [selectedCenter]);
 
   async function fetchUsers() {
-    const { data } = await supabase
+    let query = supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (selectedCenter) {
+      query = query.eq('center_id', selectedCenter);
+    }
+
+    const { data } = await query;
     setUsers((data ?? []) as User[]);
     setLoading(false);
   }
