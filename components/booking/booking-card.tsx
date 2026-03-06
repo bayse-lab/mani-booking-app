@@ -105,7 +105,7 @@ const STATUS_CONFIG: Record<
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 10,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 2,
+    borderRadius: 12,
   },
   statusText: {
     fontSize: 12,

@@ -1,10 +1,14 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, ActivityIndicator, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/lib/auth-provider';
 import { Colors } from '@/constants/colors';
+
+// Prevent the splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useAuth();
@@ -72,18 +76,31 @@ function NotificationHandler() {
 }
 
 export default function RootLayout() {
+  const [appReady, setAppReady] = useState(false);
+
   const [fontsLoaded] = useFonts({
     'CormorantGaramond': require('../assets/fonts/CormorantGaramond-Regular.ttf'),
     'Jost-Light': require('../assets/fonts/Jost-Light.ttf'),
     'Jost': require('../assets/fonts/Jost-Regular.ttf'),
   });
 
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
-        <ActivityIndicator size="large" color={Colors.accent} />
-      </View>
-    );
+  // Hold splash screen for at least 2 seconds, then wait for fonts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppReady(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Hide splash when both fonts are loaded and minimum time has passed
+  useEffect(() => {
+    if (fontsLoaded && appReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, appReady]);
+
+  if (!fontsLoaded || !appReady) {
+    return null; // Keep showing native splash screen
   }
 
   return (
@@ -105,7 +122,7 @@ export default function RootLayout() {
           />
         </Stack>
       </AuthGuard>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
     </AuthProvider>
   );
 }

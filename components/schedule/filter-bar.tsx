@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderLight,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 2,
+    borderRadius: 12,
   },
   chipActive: {
     backgroundColor: Colors.primary,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     backgroundColor: Colors.surface,
-    borderRadius: 2,
+    borderRadius: 12,
     paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

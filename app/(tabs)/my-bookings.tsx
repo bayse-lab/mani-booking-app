@@ -2,6 +2,7 @@ import { View, Text, SectionList, StyleSheet, ActivityIndicator, RefreshControl 
 import { useState } from 'react';
 import { useBookings } from '@/hooks/use-bookings';
 import { BookingCard } from '@/components/booking/booking-card';
+import { AttendanceChart } from '@/components/profile/attendance-chart';
 import { Colors } from '@/constants/colors';
 import type { BookingWithClass } from '@/types/database';
 
@@ -34,11 +35,14 @@ export default function MyBookingsScreen() {
 
   if (sections.length === 0) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>No bookings yet</Text>
-        <Text style={styles.emptyDetail}>
-          Head to the Schedule tab to book your first class
-        </Text>
+      <View style={styles.container}>
+        <AttendanceChart />
+        <View style={styles.centeredInline}>
+          <Text style={styles.emptyText}>No bookings yet</Text>
+          <Text style={styles.emptyDetail}>
+            Head to the Schedule tab to book your first class
+          </Text>
+        </View>
       </View>
     );
   }
@@ -59,6 +63,7 @@ export default function MyBookingsScreen() {
             <Text style={styles.sectionTitle}>{title}</Text>
           </View>
         )}
+        ListHeaderComponent={<AttendanceChart />}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
@@ -87,6 +92,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.background,
+    padding: 24,
+  },
+  centeredInline: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 24,
   },
   emptyText: {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-provider';
+import { useRefreshOnForeground } from './use-refresh-on-foreground';
 import type { BookingWithClass } from '@/types/database';
 
 export function useBookings() {
@@ -67,6 +68,9 @@ export function useBookings() {
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  // Refetch when app returns from background
+  useRefreshOnForeground(fetchBookings);
 
   // Realtime subscription for booking changes
   useEffect(() => {

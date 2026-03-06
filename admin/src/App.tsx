@@ -13,6 +13,7 @@ import UsersPage from './pages/Users';
 import CentersPage from './pages/Centers';
 import InstructorSchedulePage from './pages/InstructorSchedule';
 import MemberTypesPage from './pages/MemberTypes';
+import PricingPage from './pages/Pricing';
 
 // Auth Context
 interface AdminProfile {
@@ -166,6 +167,7 @@ export default function App() {
             <Route path="users" element={<AdminOnlyRoute><UsersPage /></AdminOnlyRoute>} />
             <Route path="centers" element={<AdminOnlyRoute><CentersPage /></AdminOnlyRoute>} />
             <Route path="member-types" element={<AdminOnlyRoute><MemberTypesPage /></AdminOnlyRoute>} />
+            <Route path="pricing" element={<AdminOnlyRoute><PricingPage /></AdminOnlyRoute>} />
             <Route path="my-schedule" element={<InstructorSchedulePage />} />
           </Route>
         </Routes>

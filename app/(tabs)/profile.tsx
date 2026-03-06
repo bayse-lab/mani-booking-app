@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   Image,
+  KeyboardAvoidingView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -213,10 +214,16 @@ export default function ProfileScreen() {
   }
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    >
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Avatar */}
       <View style={styles.avatarContainer}>
@@ -458,6 +465,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </Modal>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -547,7 +555,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: Colors.text,
@@ -557,7 +565,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceElevated,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -581,7 +589,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
@@ -600,7 +608,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -622,7 +630,7 @@ const styles = StyleSheet.create({
   },
   pickerModal: {
     backgroundColor: Colors.surface,
-    borderRadius: 2,
+    borderRadius: 12,
     paddingVertical: 16,
     maxHeight: 300,
   },
@@ -661,7 +669,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginHorizontal: 24,
     padding: 16,
-    borderRadius: 2,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.errorLight,
     backgroundColor: Colors.surface,

@@ -1,6 +1,16 @@
 import { Tabs } from 'expo-router';
+import { Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
+
+function HeaderLogo() {
+  return (
+    <Image
+      source={require('../../assets/images/logo-header.png')}
+      style={{ width: 100, height: 34, resizeMode: 'contain' }}
+    />
+  );
+}
 
 export default function TabLayout() {
   return (
@@ -36,14 +46,8 @@ export default function TabLayout() {
         name="schedule"
         options={{
           title: 'Schedule',
-          headerTitle: 'Maní',
-          headerTitleStyle: {
-            fontFamily: 'CormorantGaramond',
-            fontSize: 28,
-            fontWeight: '400',
-            letterSpacing: 3,
-            color: Colors.primary,
-          },
+          headerTitle: () => <HeaderLogo />,
+          headerTitleAlign: 'left',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),

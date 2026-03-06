@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useRefreshOnForeground } from './use-refresh-on-foreground';
 import type { ClassInstanceWithDefinition } from '@/types/database';
 import { getDayStart, getDayEnd } from '@/utils/date-helpers';
 
@@ -55,6 +56,9 @@ export function useClasses(selectedDate: Date, filters?: ClassFilters) {
   useEffect(() => {
     fetchClasses();
   }, [fetchClasses]);
+
+  // Refetch when app returns from background
+  useRefreshOnForeground(fetchClasses);
 
   // Realtime subscription for class instance changes (new classes, cancellations, etc.)
   useEffect(() => {

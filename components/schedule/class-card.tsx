@@ -108,7 +108,7 @@ function getSpotsColor(ci: ClassInstanceWithDefinition): string {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.borderLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 2,
+    borderRadius: 12,
   },
   categoryText: {
     fontFamily: 'Jost',

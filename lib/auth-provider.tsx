@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { registerForPushNotifications } from './notifications';
@@ -68,6 +69,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Refresh profile when app returns from background
+  // (picks up admin changes to member type, name, etc.)
+  useEffect(() => {
+    const appState = { current: AppState.currentState };
+
+    const sub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextState === 'active' &&
+        session?.user
+      ) {
+        fetchProfile(session.user.id);
+      }
+      appState.current = nextState;
+    });
+
+    return () => sub.remove();
+  }, [session]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

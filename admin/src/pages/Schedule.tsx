@@ -27,8 +27,7 @@ export default function SchedulePage() {
   const { centers, selectedCenter } = useCenterContext();
 
   const [selectedDate, setSelectedDate] = useState(() => {
-    const d = new Date();
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(new Date());
   });
   const [instances, setInstances] = useState<ClassInstance[]>([]);
   const [classDefs, setClassDefs] = useState<ClassDef[]>([]);
@@ -128,16 +127,16 @@ export default function SchedulePage() {
     if (!confirm('Cancel this class? All booked users will be notified.'))
       return;
 
-    // Get all confirmed bookings + class name before cancelling
+    // Get all confirmed bookings + class name + user emails before cancelling
     const { data: bookings } = await supabase
       .from('bookings')
-      .select('user_id')
+      .select('user_id, profiles(email, full_name)')
       .eq('class_instance_id', instanceId)
       .eq('status', 'confirmed');
 
     const { data: classData } = await supabase
       .from('class_instances')
-      .select('class_definitions(name)')
+      .select('start_time, class_definitions(name)')
       .eq('id', instanceId)
       .single();
 
@@ -147,17 +146,56 @@ export default function SchedulePage() {
       .update({ status: 'cancelled' })
       .eq('id', instanceId);
 
-    // Send push notifications to all booked users
+    // Also cancel all confirmed bookings
+    await supabase
+      .from('bookings')
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+      .eq('class_instance_id', instanceId)
+      .eq('status', 'confirmed');
+
+    // Remove any waitlisted users
+    await supabase
+      .from('waitlist_entries')
+      .update({ status: 'removed' })
+      .eq('class_instance_id', instanceId)
+      .eq('status', 'waiting');
+
+    // Send push notifications and emails to all booked users
     if (bookings && bookings.length > 0) {
       const className = (classData as any)?.class_definitions?.name || 'dit hold';
+      const classTime = classData?.start_time
+        ? new Date(classData.start_time).toLocaleString('da-DK', {
+            weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+          })
+        : '';
+
+      // Push notifications
       const notifications = bookings.map((b: any) => ({
         user_id: b.user_id,
         title: 'Hold aflyst',
-        body: `${className} er blevet aflyst.`,
+        body: `${className}${classTime ? ` (${classTime})` : ''} er blevet aflyst.`,
         data: { type: 'class_cancelled', class_instance_id: instanceId },
       }));
       await supabase.from('notifications').insert(notifications);
       await supabase.functions.invoke('push-notify').catch(() => {});
+
+      // Send cancellation emails
+      const emailRecipients = bookings
+        .map((b: any) => ({
+          email: b.profiles?.email,
+          name: b.profiles?.full_name || '',
+        }))
+        .filter((r: any) => r.email);
+
+      if (emailRecipients.length > 0) {
+        await supabase.functions.invoke('send-cancellation-email', {
+          body: {
+            recipients: emailRecipients,
+            class_name: className,
+            class_time: classTime,
+          },
+        }).catch(() => {});
+      }
     }
 
     fetchInstances();
@@ -195,7 +233,7 @@ export default function SchedulePage() {
           onClick={() => {
             const d = new Date(selectedDate + 'T00:00:00');
             d.setDate(d.getDate() - 1);
-            setSelectedDate(d.toISOString().split('T')[0]);
+            setSelectedDate(toLocalDateString(d));
           }}
           className="p-2 rounded-lg hover:bg-sand/30 text-mani-brown transition-colors"
           title="Previous day"
@@ -214,7 +252,7 @@ export default function SchedulePage() {
           onClick={() => {
             const d = new Date(selectedDate + 'T00:00:00');
             d.setDate(d.getDate() + 1);
-            setSelectedDate(d.toISOString().split('T')[0]);
+            setSelectedDate(toLocalDateString(d));
           }}
           className="p-2 rounded-lg hover:bg-sand/30 text-mani-brown transition-colors"
           title="Next day"
@@ -462,6 +500,14 @@ export default function SchedulePage() {
       )}
     </div>
   );
+}
+
+/** Format a Date to local YYYY-MM-DD (avoids toISOString UTC shift) */
+function toLocalDateString(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function formatTime(iso: string): string {

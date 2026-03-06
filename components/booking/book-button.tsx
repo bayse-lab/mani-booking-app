@@ -206,7 +206,7 @@ const BUTTON_CONFIG: Record<
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-provider';
+import { useRefreshOnForeground } from './use-refresh-on-foreground';
 import type {
   ClassInstanceWithDefinition,
   Booking,
@@ -73,6 +74,9 @@ export function useClassDetail(classInstanceId: string) {
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail]);
+
+  // Refetch when app returns from background
+  useRefreshOnForeground(fetchDetail);
 
   // Realtime subscription for spot count updates
   useEffect(() => {

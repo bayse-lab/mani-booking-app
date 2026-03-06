@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: Colors.text,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: Colors.accent,
-    borderRadius: 2,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginTop: 24,

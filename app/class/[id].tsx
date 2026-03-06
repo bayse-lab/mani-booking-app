@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.borderLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 2,
+    borderRadius: 12,
     marginBottom: 10,
   },
   categoryText: {
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
-    borderRadius: 2,
+    borderRadius: 12,
   },
   waitlistText: {
     fontSize: 14,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
-    borderRadius: 2,
+    borderRadius: 12,
   },
   cancelledText: {
     fontSize: 14,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
-    borderRadius: 2,
+    borderRadius: 12,
   },
   confirmedText: {
     fontSize: 14,

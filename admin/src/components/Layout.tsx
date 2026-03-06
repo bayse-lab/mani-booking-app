@@ -13,6 +13,7 @@ const ADMIN_NAV_ITEMS = [
 const SETTINGS_NAV_ITEMS = [
   { to: '/centers', label: 'Centers', icon: CentersIcon },
   { to: '/member-types', label: 'Member Types', icon: MemberTypesIcon },
+  { to: '/pricing', label: 'Pricing', icon: PricingIcon },
 ];
 
 const INSTRUCTOR_NAV_ITEMS = [
@@ -188,6 +189,14 @@ function MemberTypesIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  );
+}
+
+function PricingIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
     </svg>
   );
 }
