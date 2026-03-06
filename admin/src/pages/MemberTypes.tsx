@@ -215,13 +215,13 @@ export default function MemberTypesPage() {
                   <td className="px-6 py-4">
                     <button
                       onClick={() => toggleActive(t)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${
+                      className={`w-10 h-5 rounded-full relative transition-colors focus:outline-none ${
                         t.is_active ? 'bg-green-500' : 'bg-sand-dark'
                       }`}
                     >
                       <span
-                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                          t.is_active ? 'translate-x-5' : 'translate-x-0.5'
+                        className={`block absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                          t.is_active ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>
