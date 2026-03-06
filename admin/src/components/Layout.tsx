@@ -31,7 +31,7 @@ export default function Layout() {
             Maní
           </h1>
           <p className="text-xs text-mani-taupe mt-1 tracking-widest uppercase">
-            {isAdmin ? 'Admin Panel' : 'Instrukt\u00f8r'}
+            {isAdmin ? 'Admin Panel' : 'Instruktør'}
           </p>
         </div>
 

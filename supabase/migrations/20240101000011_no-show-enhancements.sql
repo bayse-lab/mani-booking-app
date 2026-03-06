@@ -166,7 +166,7 @@ BEGIN
   VALUES (
     v_booking.user_id,
     'No-show',
-    'Du er markeret som no-show for ' || COALESCE(v_class_name, 'dit hold') || '. En no-show afgift kan blive tilf\u00f8jet din n\u00e6ste faktura.',
+    'Du er markeret som no-show for ' || COALESCE(v_class_name, 'dit hold') || '. En no-show afgift kan blive tilføjet din næste faktura.',
     jsonb_build_object(
       'type', 'no_show',
       'class_instance_id', v_booking.class_instance_id,

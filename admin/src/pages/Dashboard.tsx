@@ -136,7 +136,7 @@ export default function DashboardPage() {
       ? centers.find((c) => c.id === selectedCenter)?.name ?? 'Ukendt'
       : 'Alle centre';
 
-    const csvHeader = 'Dato;Tid;Hold;Instrukt\u00f8r;Center;Medlem;Email;Status;Tjekket ind';
+    const csvHeader = 'Dato;Tid;Hold;Instruktør;Center;Medlem;Email;Status;Tjekket ind';
     const csvRows = rows
       .filter((row) => row.class_instances !== null)
       .map((row) => {
@@ -151,7 +151,7 @@ export default function DashboardPage() {
         const email = row.profiles?.email ?? '';
         const status = row.status === 'no_show' ? 'No-show'
           : row.status === 'late_cancelled' ? 'Sen afmelding'
-          : row.checked_in_at ? 'Tjekket ind' : 'Bekr\u00e6ftet';
+          : row.checked_in_at ? 'Tjekket ind' : 'Bekræftet';
         const checkedIn = row.checked_in_at ? 'Ja' : 'Nej';
 
         return [date, time, className, instructor, center, memberName, email, status, checkedIn].join(';');
@@ -232,7 +232,7 @@ export default function DashboardPage() {
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            {exporting ? 'Eksporterer...' : 'Eksport\u00e9r CSV'}
+            {exporting ? 'Eksporterer...' : 'Eksportér CSV'}
           </button>
         </div>
       </div>
@@ -243,7 +243,7 @@ export default function DashboardPage() {
         <StatCard
           label="Dagens bookinger"
           value={`${stats.todayBookings} / ${stats.todayCapacity}`}
-          subtitle={`${occupancyRate}% bel\u00e6gning`}
+          subtitle={`${occupancyRate}% belægning`}
         />
         <StatCard label="Medlemmer i alt" value={stats.totalMembers} />
       </div>

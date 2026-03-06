@@ -33,7 +33,7 @@ export default function LoginPage() {
 
     if (profile?.role !== 'admin' && profile?.role !== 'instructor') {
       await supabase.auth.signOut();
-      setError('Adgang n\u00e6gtet. Kun administratorer og instrukt\u00f8rer kan logge ind.');
+      setError('Adgang nægtet. Kun administratorer og instruktører kan logge ind.');
       setLoading(false);
       return;
     }
