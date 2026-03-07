@@ -12,6 +12,7 @@ interface MembershipType {
   discount_type: string | null;
   discount_value: number | null;
   discount_label: string | null;
+  stripe_price_id: string | null;
   sort_order: number;
   is_active: boolean;
 }
@@ -41,6 +42,7 @@ const emptyForm = {
   discount_type: '',
   discount_value: '',
   discount_label: '',
+  stripe_price_id: '',
   sort_order: '0',
   is_active: true,
 };
@@ -85,6 +87,7 @@ export default function MemberTypesPage() {
       discount_type: t.discount_type || '',
       discount_value: t.discount_value != null ? String(t.discount_value) : '',
       discount_label: t.discount_label || '',
+      stripe_price_id: t.stripe_price_id || '',
       sort_order: String(t.sort_order),
       is_active: t.is_active,
     });
@@ -108,6 +111,7 @@ export default function MemberTypesPage() {
       discount_type: form.discount_type || null,
       discount_value: form.discount_value ? parseFloat(form.discount_value) : null,
       discount_label: form.discount_label.trim() || null,
+      stripe_price_id: form.stripe_price_id.trim() || null,
       sort_order: parseInt(form.sort_order) || 0,
       is_active: form.is_active,
       updated_at: new Date().toISOString(),
@@ -387,6 +391,24 @@ export default function MemberTypesPage() {
                     className="w-full px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-sand-light"
                     placeholder="e.g. Founder member - always half price"
                   />
+                </div>
+              </div>
+
+              {/* Stripe Integration */}
+              <div className="border-t border-sand pt-4">
+                <p className="text-xs font-medium text-mani-brown uppercase tracking-wide mb-3">Stripe Integration</p>
+                <div>
+                  <label className="block text-sm font-medium text-mani-brown mb-1">Stripe Price ID</label>
+                  <input
+                    type="text"
+                    value={form.stripe_price_id}
+                    onChange={(e) => setForm({ ...form, stripe_price_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-sand-light font-mono"
+                    placeholder="price_1ABC..."
+                  />
+                  <p className="text-xs text-mani-taupe mt-1">
+                    From Stripe Dashboard → Products → Price ID. Required for self-service subscriptions.
+                  </p>
                 </div>
               </div>
 

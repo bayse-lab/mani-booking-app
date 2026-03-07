@@ -32,6 +32,17 @@ interface InstructorCenter {
   center_id: string;
 }
 
+interface UserSubscription {
+  id: string;
+  user_id: string;
+  membership_type_id: string | null;
+  stripe_subscription_id: string | null;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  membership_types: { name: string } | null;
+}
+
 interface UserBooking {
   id: string;
   status: string;
@@ -91,8 +102,14 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [centers, setCenters] = useState<Center[]>([]);
   const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
+  const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  // Grant membership modal
+  const [grantUser, setGrantUser] = useState<User | null>(null);
+  const [grantMembershipTypeId, setGrantMembershipTypeId] = useState('');
+  const [grantSaving, setGrantSaving] = useState(false);
 
   // Edit modal
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -124,6 +141,7 @@ export default function UsersPage() {
     fetchUsers();
     fetchCenters();
     fetchMembershipTypes();
+    fetchSubscriptions();
   }, [selectedCenter]);
 
   async function fetchUsers() {
@@ -158,6 +176,66 @@ export default function UsersPage() {
       .order('sort_order')
       .order('name');
     setMembershipTypes((data ?? []) as MembershipType[]);
+  }
+
+  async function fetchSubscriptions() {
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('id, user_id, membership_type_id, stripe_subscription_id, status, current_period_end, cancel_at_period_end, membership_types(name)')
+      .in('status', ['active', 'admin_granted', 'trialing', 'past_due']);
+    setSubscriptions((data ?? []) as UserSubscription[]);
+  }
+
+  function getUserSubscription(userId: string): UserSubscription | undefined {
+    return subscriptions.find((s) => s.user_id === userId);
+  }
+
+  // --- Grant / Revoke Membership ---
+  async function handleGrantMembership() {
+    if (!grantUser || !grantMembershipTypeId) return;
+    setGrantSaving(true);
+
+    const { error } = await supabase.from('subscriptions').insert({
+      user_id: grantUser.id,
+      membership_type_id: grantMembershipTypeId,
+      status: 'admin_granted',
+    });
+
+    if (error) {
+      alert('Failed to grant membership: ' + error.message);
+      setGrantSaving(false);
+      return;
+    }
+
+    // Also update profile membership_type_id
+    await supabase
+      .from('profiles')
+      .update({ membership_type_id: grantMembershipTypeId })
+      .eq('id', grantUser.id);
+
+    setGrantSaving(false);
+    setGrantUser(null);
+    setGrantMembershipTypeId('');
+    fetchSubscriptions();
+    fetchUsers();
+  }
+
+  async function handleRevokeMembership(sub: UserSubscription) {
+    if (!confirm(`Revoke admin-granted membership for this user?`)) return;
+
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'canceled' })
+      .eq('id', sub.id);
+
+    // Clear profile membership_type_id
+    await supabase
+      .from('profiles')
+      .update({ membership_type_id: null })
+      .eq('id', sub.user_id);
+
+    fetchSubscriptions();
+    fetchUsers();
   }
 
   // --- Edit ---
@@ -420,6 +498,7 @@ export default function UsersPage() {
               <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Center</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Age</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Role</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Subscription</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Joined</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">Actions</th>
             </tr>
@@ -427,7 +506,7 @@ export default function UsersPage() {
           <tbody className="divide-y divide-sand/60">
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-mani-taupe text-sm">
+                <td colSpan={9} className="px-6 py-8 text-center text-mani-taupe text-sm">
                   No users found
                 </td>
               </tr>
@@ -450,6 +529,30 @@ export default function UsersPage() {
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                   </td>
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const sub = getUserSubscription(user.id);
+                      if (!sub) return <span className="text-xs text-mani-taupe">None</span>;
+                      const statusColors: Record<string, string> = {
+                        active: 'bg-green-100 text-green-700',
+                        admin_granted: 'bg-purple-100 text-purple-700',
+                        trialing: 'bg-blue-100 text-blue-700',
+                        past_due: 'bg-orange-100 text-orange-700',
+                      };
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium inline-block w-fit ${
+                            statusColors[sub.status] || 'bg-sand text-mani-brown'
+                          }`}>
+                            {sub.status === 'admin_granted' ? 'Granted' : sub.status}
+                          </span>
+                          <span className="text-[11px] text-mani-brown truncate max-w-[120px]">
+                            {sub.membership_types?.name || '-'}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-6 py-4 text-sm text-mani-brown">
                     {new Date(user.created_at).toLocaleDateString('da-DK')}
                   </td>
@@ -468,6 +571,31 @@ export default function UsersPage() {
                       >
                         History
                       </button>
+                      <span className="text-sand-dark">|</span>
+                      {(() => {
+                        const sub = getUserSubscription(user.id);
+                        if (sub && sub.status === 'admin_granted') {
+                          return (
+                            <button
+                              onClick={() => handleRevokeMembership(sub)}
+                              className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors"
+                            >
+                              Revoke
+                            </button>
+                          );
+                        }
+                        if (!sub) {
+                          return (
+                            <button
+                              onClick={() => { setGrantUser(user); setGrantMembershipTypeId(''); }}
+                              className="text-sm text-green-600 hover:text-green-800 font-medium transition-colors"
+                            >
+                              Grant
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </td>
                 </tr>
@@ -692,6 +820,53 @@ export default function UsersPage() {
             <div className="flex justify-end pt-4">
               <button onClick={() => setHistoryUser(null)} className="px-4 py-2 text-sm text-mani-brown hover:text-brand transition-colors">
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======= Grant Membership Modal ======= */}
+      {grantUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-mani-cream rounded-2xl w-full max-w-sm mx-4 p-6 border border-sand">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-brand">Grant Membership</h2>
+              <button onClick={() => setGrantUser(null)} className="text-mani-taupe hover:text-brand text-xl leading-none">&times;</button>
+            </div>
+
+            <p className="text-sm text-mani-brown mb-4">
+              Grant a membership to <strong>{grantUser.full_name || grantUser.email}</strong> without requiring payment.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-mani-brown mb-1">Membership Type</label>
+              <select
+                value={grantMembershipTypeId}
+                onChange={(e) => setGrantMembershipTypeId(e.target.value)}
+                className="w-full px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-sand-light"
+              >
+                <option value="">Select membership type...</option>
+                {membershipTypes.map((mt) => (
+                  <option key={mt.id} value={mt.id}>{mt.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setGrantUser(null)}
+                className="px-4 py-2 text-sm text-mani-brown hover:text-brand transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGrantMembership}
+                disabled={grantSaving || !grantMembershipTypeId}
+                className="px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {grantSaving ? 'Granting...' : 'Grant Membership'}
               </button>
             </div>
           </div>

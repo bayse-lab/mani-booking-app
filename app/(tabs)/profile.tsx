@@ -19,12 +19,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-provider';
 import { useCenters } from '@/hooks/use-centers';
+import { useSubscription } from '@/hooks/use-subscription';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/colors';
 
 export default function ProfileScreen() {
   const { profile, user, signOut, refreshProfile } = useAuth();
   const { centers } = useCenters();
+  const {
+    subscription,
+    membershipTypes,
+    loading: subLoading,
+    actionLoading,
+    subscribe,
+    openPortal,
+  } = useSubscription();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthday, setBirthday] = useState('');
@@ -300,6 +309,91 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
         <Text style={styles.email}>{profile.email}</Text>
+      </View>
+
+      {/* Membership Section */}
+      <View style={styles.membershipSection}>
+        <Text style={styles.sectionHeader}>Membership</Text>
+
+        {subLoading ? (
+          <View style={styles.membershipLoading}>
+            <ActivityIndicator size="small" color={Colors.accent} />
+          </View>
+        ) : subscription ? (
+          /* Active subscription card */
+          <View style={styles.activePlanCard}>
+            <View style={styles.activePlanHeader}>
+              <View style={styles.activePlanBadge}>
+                <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                <Text style={styles.activePlanBadgeText}>
+                  {subscription.status === 'admin_granted' ? 'Granted' : 'Active'}
+                </Text>
+              </View>
+              {subscription.cancel_at_period_end && (
+                <View style={styles.cancelBadge}>
+                  <Text style={styles.cancelBadgeText}>Cancels at period end</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.activePlanName}>
+              {subscription.membership_types?.name || 'Membership'}
+            </Text>
+            {subscription.current_period_end && (
+              <Text style={styles.activePlanRenewal}>
+                {subscription.cancel_at_period_end ? 'Expires' : 'Renews'}{' '}
+                {new Date(subscription.current_period_end).toLocaleDateString('da-DK', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </Text>
+            )}
+            {subscription.status !== 'admin_granted' && (
+              <TouchableOpacity
+                style={[styles.manageButton, actionLoading && styles.manageButtonDisabled]}
+                onPress={openPortal}
+                disabled={actionLoading}
+              >
+                <Ionicons name="settings-outline" size={16} color={Colors.primary} />
+                <Text style={styles.manageButtonText}>
+                  {actionLoading ? 'Opening...' : 'Manage Subscription'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : membershipTypes.length > 0 ? (
+          /* Subscription options */
+          <View style={styles.plansContainer}>
+            {membershipTypes.map((type) => (
+              <View key={type.id} style={styles.planCard}>
+                <View style={styles.planCardContent}>
+                  <Text style={styles.planName}>{type.name}</Text>
+                  {type.description ? (
+                    <Text style={styles.planDescription}>{type.description}</Text>
+                  ) : null}
+                  <Text style={styles.planPrice}>
+                    {type.monthly_price_dkk != null
+                      ? `${type.monthly_price_dkk} kr / month`
+                      : ''}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.subscribeButton, actionLoading && styles.subscribeButtonDisabled]}
+                  onPress={() => type.stripe_price_id && subscribe(type.stripe_price_id)}
+                  disabled={actionLoading || !type.stripe_price_id}
+                >
+                  <Text style={styles.subscribeButtonText}>
+                    {actionLoading ? '...' : 'Subscribe'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noPlansText}>
+            No membership plans available at this time.
+          </Text>
+        )}
       </View>
 
       {/* Personal Info */}
@@ -617,6 +711,153 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     fontFamily: 'Jost-Light',
+  },
+  /* ─── Membership Section ─── */
+  membershipSection: {
+    paddingHorizontal: 24,
+    marginBottom: 8,
+  },
+  membershipLoading: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  activePlanCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 8,
+  },
+  activePlanHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  activePlanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.sandLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  activePlanBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.success,
+    fontFamily: 'Jost',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cancelBadge: {
+    backgroundColor: Colors.surfaceElevated,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  cancelBadgeText: {
+    fontSize: 11,
+    color: Colors.warmGrey,
+    fontFamily: 'Jost-Light',
+  },
+  activePlanName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.primary,
+    fontFamily: 'CormorantGaramond',
+    marginBottom: 4,
+  },
+  activePlanRenewal: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontFamily: 'Jost-Light',
+    marginBottom: 16,
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.sandLight,
+    borderRadius: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  manageButtonDisabled: {
+    opacity: 0.5,
+  },
+  manageButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+    fontFamily: 'Jost',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  plansContainer: {
+    gap: 10,
+    marginTop: 8,
+  },
+  planCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  planCardContent: {
+    flex: 1,
+  },
+  planName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.primary,
+    fontFamily: 'CormorantGaramond',
+  },
+  planDescription: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontFamily: 'Jost-Light',
+    marginTop: 2,
+  },
+  planPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.accent,
+    fontFamily: 'Jost',
+    marginTop: 4,
+  },
+  subscribeButton: {
+    backgroundColor: Colors.accent,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  subscribeButtonDisabled: {
+    opacity: 0.5,
+  },
+  subscribeButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textOnAccent,
+    fontFamily: 'Jost',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  noPlansText: {
+    fontSize: 14,
+    color: Colors.textTertiary,
+    fontFamily: 'Jost-Light',
+    textAlign: 'center',
+    paddingVertical: 24,
   },
   form: {
     paddingHorizontal: 24,

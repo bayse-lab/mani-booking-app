@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Successful — Maní</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@200;300;400&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --obsidian: #1F1A15;
+      --parchment: #F0CDA9;
+      --sand: #F5E8D5;
+      --sand-mid: #E8D4B8;
+      --gold: #C4A97D;
+      --warm-grey: #8A7D70;
+      --success: #6b9e6b;
+    }
+
+    body {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-weight: 300;
+      background: var(--sand);
+      color: var(--obsidian);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 500;
+      letter-spacing: 6px;
+      color: var(--obsidian);
+      margin-bottom: 40px;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+      color: white;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--obsidian);
+    }
+
+    p {
+      font-size: 16px;
+      color: var(--warm-grey);
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--obsidian);
+      font-family: 'Jost', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 14px 40px;
+      border-radius: 10px;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    .note {
+      font-size: 13px;
+      color: var(--warm-grey);
+      margin-top: 16px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">Maní</div>
+    <div class="icon">✓</div>
+    <h1>Payment Successful</h1>
+    <p>Your membership is now active. You can start booking classes right away!</p>
+    <a class="btn" href="bookingapp://payment-success" id="openApp">Open Maní App</a>
+    <p class="note">If the app doesn't open automatically, tap the button above.</p>
+  </div>
+
+  <script>
+    // Try to auto-redirect back to the app
+    setTimeout(function() {
+      window.location.href = 'bookingapp://payment-success';
+    }, 1500);
+  </script>
+</body>
+</html>

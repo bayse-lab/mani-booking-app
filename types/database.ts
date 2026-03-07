@@ -25,6 +25,7 @@ export interface Database {
           postal_code: string | null;
           avatar_url: string | null;
           membership_type_id: string | null;
+          stripe_customer_id: string | null;
           deactivation_requested_at: string | null;
           created_at: string;
           updated_at: string;
@@ -44,6 +45,7 @@ export interface Database {
           postal_code?: string | null;
           avatar_url?: string | null;
           membership_type_id?: string | null;
+          stripe_customer_id?: string | null;
           deactivation_requested_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -63,6 +65,7 @@ export interface Database {
           postal_code?: string | null;
           avatar_url?: string | null;
           membership_type_id?: string | null;
+          stripe_customer_id?: string | null;
           deactivation_requested_at?: string | null;
           updated_at?: string;
         };
@@ -372,6 +375,7 @@ export interface Database {
           discount_type: 'percentage' | 'fixed_amount' | 'free_months' | null;
           discount_value: number | null;
           discount_label: string | null;
+          stripe_price_id: string | null;
           sort_order: number;
           is_active: boolean;
           created_at: string;
@@ -388,6 +392,7 @@ export interface Database {
           discount_type?: 'percentage' | 'fixed_amount' | 'free_months' | null;
           discount_value?: number | null;
           discount_label?: string | null;
+          stripe_price_id?: string | null;
           sort_order?: number;
           is_active?: boolean;
           created_at?: string;
@@ -403,11 +408,64 @@ export interface Database {
           discount_type?: 'percentage' | 'fixed_amount' | 'free_months' | null;
           discount_value?: number | null;
           discount_label?: string | null;
+          stripe_price_id?: string | null;
           sort_order?: number;
           is_active?: boolean;
           updated_at?: string;
         };
         Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          membership_type_id: string | null;
+          stripe_subscription_id: string | null;
+          status: 'active' | 'canceled' | 'past_due' | 'admin_granted' | 'trialing' | 'incomplete';
+          current_period_start: string | null;
+          current_period_end: string | null;
+          cancel_at_period_end: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          membership_type_id?: string | null;
+          stripe_subscription_id?: string | null;
+          status?: 'active' | 'canceled' | 'past_due' | 'admin_granted' | 'trialing' | 'incomplete';
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          membership_type_id?: string | null;
+          stripe_subscription_id?: string | null;
+          status?: 'active' | 'canceled' | 'past_due' | 'admin_granted' | 'trialing' | 'incomplete';
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'subscriptions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'subscriptions_membership_type_id_fkey';
+            columns: ['membership_type_id'];
+            isOneToOne: false;
+            referencedRelation: 'membership_types';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       notifications: {
         Row: {
@@ -477,6 +535,7 @@ export type Booking = Database['public']['Tables']['bookings']['Row'];
 export type WaitlistEntry = Database['public']['Tables']['waitlist_entries']['Row'];
 export type Notification = Database['public']['Tables']['notifications']['Row'];
 export type MembershipType = Database['public']['Tables']['membership_types']['Row'];
+export type Subscription = Database['public']['Tables']['subscriptions']['Row'];
 
 // Joined types for queries
 export type ClassInstanceWithDefinition = ClassInstance & {
@@ -490,4 +549,8 @@ export type BookingWithClass = Booking & {
 
 export type WaitlistEntryWithClass = WaitlistEntry & {
   class_instances: ClassInstanceWithDefinition;
+};
+
+export type SubscriptionWithMembership = Subscription & {
+  membership_types: MembershipType | null;
 };
