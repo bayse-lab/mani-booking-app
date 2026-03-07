@@ -131,18 +131,24 @@ export default function MemberTypesPage() {
     if (savedId && payload.monthly_price_dkk && payload.monthly_price_dkk > 0) {
       setSyncing(true);
       try {
-        const { error } = await supabase.functions.invoke('sync-stripe-product', {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('sync-stripe-product', {
           body: { membershipTypeId: savedId },
         });
-        if (error) {
-          console.error('Stripe sync error:', error);
-          alert(`Saved, but Stripe sync failed: ${error.message || 'Unknown error'}`);
+        if (fnError) {
+          console.error('Stripe sync error:', fnError);
+          const msg = fnError instanceof Error ? fnError.message : JSON.stringify(fnError);
+          alert(`Saved, but Stripe sync failed: ${msg}`);
+        } else if (fnData?.error) {
+          console.error('Stripe sync returned error:', fnData.error);
+          alert(`Saved, but Stripe sync failed: ${fnData.error}`);
         }
       } catch (err) {
-        console.error('Stripe sync error:', err);
+        console.error('Stripe sync catch error:', err);
         alert(`Saved, but Stripe sync failed: ${(err as Error).message}`);
       }
       setSyncing(false);
+    } else {
+      console.log('Stripe sync skipped:', { savedId, price: payload.monthly_price_dkk });
     }
 
     setShowForm(false);

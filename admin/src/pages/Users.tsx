@@ -183,7 +183,12 @@ export default function UsersPage() {
       .from('subscriptions')
       .select('id, user_id, membership_type_id, stripe_subscription_id, status, current_period_end, cancel_at_period_end, membership_types(name)')
       .in('status', ['active', 'admin_granted', 'trialing', 'past_due']);
-    setSubscriptions((data ?? []) as UserSubscription[]);
+    // Supabase returns membership_types as array from join; map to single object
+    const mapped = (data ?? []).map((s: any) => ({
+      ...s,
+      membership_types: Array.isArray(s.membership_types) ? s.membership_types[0] ?? null : s.membership_types,
+    }));
+    setSubscriptions(mapped as UserSubscription[]);
   }
 
   function getUserSubscription(userId: string): UserSubscription | undefined {
