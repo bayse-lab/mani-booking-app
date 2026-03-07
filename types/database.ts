@@ -375,6 +375,7 @@ export interface Database {
           discount_type: 'percentage' | 'fixed_amount' | 'free_months' | null;
           discount_value: number | null;
           discount_label: string | null;
+          stripe_product_id: string | null;
           stripe_price_id: string | null;
           sort_order: number;
           is_active: boolean;
@@ -392,6 +393,7 @@ export interface Database {
           discount_type?: 'percentage' | 'fixed_amount' | 'free_months' | null;
           discount_value?: number | null;
           discount_label?: string | null;
+          stripe_product_id?: string | null;
           stripe_price_id?: string | null;
           sort_order?: number;
           is_active?: boolean;
@@ -408,6 +410,7 @@ export interface Database {
           discount_type?: 'percentage' | 'fixed_amount' | 'free_months' | null;
           discount_value?: number | null;
           discount_label?: string | null;
+          stripe_product_id?: string | null;
           stripe_price_id?: string | null;
           sort_order?: number;
           is_active?: boolean;

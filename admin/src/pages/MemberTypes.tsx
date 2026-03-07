@@ -12,6 +12,7 @@ interface MembershipType {
   discount_type: string | null;
   discount_value: number | null;
   discount_label: string | null;
+  stripe_product_id: string | null;
   stripe_price_id: string | null;
   sort_order: number;
   is_active: boolean;
@@ -42,7 +43,6 @@ const emptyForm = {
   discount_type: '',
   discount_value: '',
   discount_label: '',
-  stripe_price_id: '',
   sort_order: '0',
   is_active: true,
 };
@@ -54,6 +54,7 @@ export default function MemberTypesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchTypes();
@@ -87,7 +88,6 @@ export default function MemberTypesPage() {
       discount_type: t.discount_type || '',
       discount_value: t.discount_value != null ? String(t.discount_value) : '',
       discount_label: t.discount_label || '',
-      stripe_price_id: t.stripe_price_id || '',
       sort_order: String(t.sort_order),
       is_active: t.is_active,
     });
@@ -111,19 +111,40 @@ export default function MemberTypesPage() {
       discount_type: form.discount_type || null,
       discount_value: form.discount_value ? parseFloat(form.discount_value) : null,
       discount_label: form.discount_label.trim() || null,
-      stripe_price_id: form.stripe_price_id.trim() || null,
       sort_order: parseInt(form.sort_order) || 0,
       is_active: form.is_active,
       updated_at: new Date().toISOString(),
     };
 
+    let savedId = editingId;
+
     if (editingId) {
       await supabase.from('membership_types').update(payload).eq('id', editingId);
     } else {
-      await supabase.from('membership_types').insert(payload);
+      const { data } = await supabase.from('membership_types').insert(payload).select('id').single();
+      savedId = data?.id ?? null;
     }
 
     setSaving(false);
+
+    // Auto-sync with Stripe if there's a price set
+    if (savedId && payload.monthly_price_dkk && payload.monthly_price_dkk > 0) {
+      setSyncing(true);
+      try {
+        const { error } = await supabase.functions.invoke('sync-stripe-product', {
+          body: { membershipTypeId: savedId },
+        });
+        if (error) {
+          console.error('Stripe sync error:', error);
+          alert(`Saved, but Stripe sync failed: ${error.message || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('Stripe sync error:', err);
+        alert(`Saved, but Stripe sync failed: ${(err as Error).message}`);
+      }
+      setSyncing(false);
+    }
+
     setShowForm(false);
     fetchTypes();
   }
@@ -189,6 +210,9 @@ export default function MemberTypesPage() {
                   Discount
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">
+                  Stripe
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">
                   Active
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-mani-brown uppercase tracking-wide">
@@ -215,6 +239,19 @@ export default function MemberTypesPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-mani-brown">
                     {t.discount_label || '\u2013'}
+                  </td>
+                  <td className="px-6 py-4">
+                    {t.stripe_price_id ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Synced
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-mani-taupe bg-sand/40 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sand-dark" />
+                        —
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <button
@@ -394,23 +431,40 @@ export default function MemberTypesPage() {
                 </div>
               </div>
 
-              {/* Stripe Integration */}
-              <div className="border-t border-sand pt-4">
-                <p className="text-xs font-medium text-mani-brown uppercase tracking-wide mb-3">Stripe Integration</p>
-                <div>
-                  <label className="block text-sm font-medium text-mani-brown mb-1">Stripe Price ID</label>
-                  <input
-                    type="text"
-                    value={form.stripe_price_id}
-                    onChange={(e) => setForm({ ...form, stripe_price_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-sand-light font-mono"
-                    placeholder="price_1ABC..."
-                  />
-                  <p className="text-xs text-mani-taupe mt-1">
-                    From Stripe Dashboard → Products → Price ID. Required for self-service subscriptions.
-                  </p>
-                </div>
-              </div>
+              {/* Stripe Integration — auto-synced */}
+              {editingId && (() => {
+                const currentType = types.find((t) => t.id === editingId);
+                return currentType?.stripe_price_id ? (
+                  <div className="border-t border-sand pt-4">
+                    <p className="text-xs font-medium text-mani-brown uppercase tracking-wide mb-3">Stripe Integration</p>
+                    <div className="bg-sand/30 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-xs text-mani-brown font-medium">Synced with Stripe</span>
+                      </div>
+                      <p className="text-xs text-mani-taupe font-mono">
+                        Product: {currentType.stripe_product_id || '—'}
+                      </p>
+                      <p className="text-xs text-mani-taupe font-mono">
+                        Price: {currentType.stripe_price_id}
+                      </p>
+                    </div>
+                    <p className="text-xs text-mani-taupe mt-2">
+                      Stripe product and price are auto-synced when you save. If you change the monthly price, a new Stripe Price will be created automatically.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border-t border-sand pt-4">
+                    <p className="text-xs font-medium text-mani-brown uppercase tracking-wide mb-3">Stripe Integration</p>
+                    <div className="bg-sand/30 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-sand-dark" />
+                        <span className="text-xs text-mani-taupe">Not synced — will sync automatically when saved with a monthly price.</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Sort Order + Active */}
               <div className="grid grid-cols-2 gap-4">
@@ -440,10 +494,10 @@ export default function MemberTypesPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || syncing}
                   className="flex-1 bg-accent text-brand py-2.5 rounded-lg font-medium text-sm disabled:opacity-50 hover:bg-accent-dark transition-colors"
                 >
-                  {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Type'}
+                  {syncing ? 'Syncing with Stripe...' : saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Type'}
                 </button>
                 <button
                   type="button"
